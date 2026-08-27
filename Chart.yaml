@@ -1,0 +1,11 @@
+apiVersion: v2
+name: okdp-lib
+description: >-
+  OKDP library chart: connection resolution against the OKDP contracts, the
+  instance descriptor, platform (global.okdp) helpers, generated secrets and
+  the rendering of vendored upstream charts with computed values.
+type: library
+version: 0.1.0
+home: https://okdp.io
+sources:
+  - https://github.com/OKDP/okdp-lib

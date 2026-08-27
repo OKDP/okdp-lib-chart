@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://okdp.io/schemas/contracts/hive.schema.json",
+  "title": "Hive metastore",
+  "description": "Hive metastore reached over thrift. Holds the table definitions a query engine reads.",
+  "type": "object",
+  "x-okdp-contract": "hive",
+  "x-okdp-icon": "pi pi-table",
+  "x-okdp-category": "catalog",
+  "x-okdp-external": true,
+  "x-okdp-endpoint-from": ["thriftUri"],
+  "x-okdp-internal": {
+    "thriftUri": "thrift://${ref}-hive-metastore.${namespace}.svc:9083"
+  },
+  "properties": {
+    "thriftUri": {
+      "type": "string",
+      "title": "Thrift URI",
+      "description": "The only address the hive contract carries.",
+      "x-ui-placeholder": "thrift://metastore.example.com:9083"
+    }
+  },
+  "required": ["thriftUri"],
+  "additionalProperties": false
+}

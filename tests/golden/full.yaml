@@ -1,0 +1,917 @@
+---
+# Source: okdp-lib-test/templates/descriptor.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: demo-mini-store-s3-credentials
+  namespace: demo
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+    okdp.io/credentials-s3: "true"
+type: Opaque
+stringData:
+  accessKey: a
+  secretKey: b
+
+---
+# Source: okdp-lib-test/templates/connections.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini-connections
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+data:
+  00-demo-storage: |
+    apiUrl: https://storage-default-api.okdp.sandbox
+    internalUrl: http://storage-s3.default.svc.cluster.local:8333
+    okdp:
+      contract: s3
+      ref: demo-storage
+      source: external
+    pathStyle: true
+    region: us-east-1
+    secretRef:
+      name: creds-seaweedfs-s3
+  01-demo-db: |
+    dbName: hive
+    driver: org.postgresql.Driver
+    engine: postgresql
+    host: demo-pg-rw.demo.svc.cluster.local
+    okdp:
+      contract: database-server
+      ref: demo-db
+      source: external
+    port: 5432
+    secretRef:
+      name: demo-pg-app
+    sslMode: disable
+  02-mysql-db: |
+    dbName: app
+    driver: com.mysql.cj.jdbc.Driver
+    engine: mysql
+    host: mysql.example.org
+    okdp:
+      contract: database-server
+      ref: mysql-db
+      source: external
+    port: 3306
+  03-ext-hive: |
+    okdp:
+      contract: hive
+      ref: ext-hive
+      source: external
+    thriftUri: thrift://hms.example.org:9083
+  04-demo-hive: |
+    okdp:
+      contract: hive
+      ref: demo-hive
+      source: internal
+    secretRef:
+      name: demo-hive-hive-credentials
+    thriftUri: thrift://demo-hive-hive-metastore.demo.svc:9083
+  05-demo-polaris: |
+    internalUri: http://demo-polaris-polaris.demo.svc:8181/api/catalog
+    okdp:
+      contract: iceberg-catalog
+      ref: demo-polaris
+      source: internal
+    secretRef:
+      name: demo-polaris-iceberg-catalog-credentials
+    uri: https://polaris-demo.okdp.sandbox/api/catalog
+  06-demo-trino: |
+    internalUri: trino://trino@demo-trino-trino.demo.svc:8080
+    okdp:
+      contract: trino
+      ref: demo-trino
+      source: internal
+    secretRef:
+      name: demo-trino-trino-credentials
+    uri: trino://trino@trino-demo.okdp.sandbox:443
+    url: https://trino-demo.okdp.sandbox
+
+---
+# Source: okdp-lib-test/templates/descriptor.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini-okdp
+  namespace: demo
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+    okdp.io/provides-database-server: "true"
+    okdp.io/provides-hive: "true"
+    okdp.io/provides-s3: "true"
+    okdp.io/provides-trino: "true"
+data:
+  service: "okdp-lib-test"
+  version: "1.2.3-0.1.0"
+  url: "https://mini-demo.okdp.sandbox"
+  usage: |
+    Mini is reachable at https://mini-demo.okdp.sandbox.
+  outputs.yaml: |
+    - contract: hive
+      name: demo-mini
+      secretRef:
+        name: demo-mini-hive-credentials
+      values:
+        thriftUri: thrift://demo-mini-hive-metastore.demo.svc:9083
+    - contract: trino
+      name: demo-mini
+      secretRef:
+        name: demo-mini-trino-credentials
+      values:
+        catalogs:
+        - tpch
+        - bronze
+        internalUri: trino://trino@demo-mini-trino.demo.svc:8080
+        uri: trino://trino@trino-demo.okdp.sandbox:443
+        url: https://trino-demo.okdp.sandbox
+    - contract: database-server
+      name: demo-mini-app
+      secretRef:
+        name: demo-mini-app-database-server-credentials
+      values:
+        dbName: app
+        driver: org.postgresql.Driver
+        engine: postgresql
+        host: demo-mini-rw.demo.svc
+        port: 5432
+        sslMode: prefer
+    - contract: s3
+      name: demo-mini-store
+      secretRef:
+        name: demo-mini-store-s3-credentials
+      values:
+        apiUrl: http://store.example:8333
+        pathStyle: true
+        region: us-east-1
+
+
+---
+# Source: okdp-lib-test/templates/platform.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini-platform
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/component: test
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+  annotations:
+    cert-manager.io/cluster-issuer: "default-issuer"
+data:
+  fullname: "demo-mini"
+  ingressHost: "okdp-lib-test-demo.okdp.sandbox"
+  url: "https://ui-demo.okdp.sandbox"
+  className: "nginx"
+  missing: "null"
+  selectorLabels: |
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+  oidc.yaml: |
+    authUrl: https://keycloak.okdp.sandbox/realms/master/protocol/openid-connect/auth
+    clientProvisioning: dcr
+    dcr:
+      authMethod: anonymous
+      enabled: true
+      registrationUrl: https://keycloak.okdp.sandbox/realms/master/clients-registrations/openid-connect
+    enabled: true
+    existing: false
+    issuerUri: https://keycloak.okdp.sandbox/realms/master
+    jwksUri: https://keycloak.okdp.sandbox/realms/master/protocol/openid-connect/certs
+    kubauth:
+      enabled: false
+    scope: openid profile email groups
+    tokenUrl: https://keycloak.okdp.sandbox/realms/master/protocol/openid-connect/token
+  proxy-env.yaml: |
+    HTTP_PROXY: http://proxy:3128
+    NO_PROXY: .svc,.cluster.local
+  proxy-envlist.yaml: |
+    - name: HTTP_PROXY
+      value: http://proxy:3128
+    - name: NO_PROXY
+      value: .svc,.cluster.local
+
+---
+# Source: okdp-lib-test/templates/vendor.yaml
+# Source: vendor/mini/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini
+  labels:
+    app.kubernetes.io/name: mini
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "9.9"
+data:
+  script.sh: |
+    echo "hello from a vendored file"
+    
+  global.suffix: "okdp.sandbox"
+
+
+
+---
+# Source: okdp-lib-test/templates/vendor.yaml
+# Source: vendor/mini/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-mini
+  labels:
+    app.kubernetes.io/name: mini
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "9.9"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: demo-mini
+  template:
+    metadata:
+      annotations:
+        checksum/config: 83640579dd0b27a910758c74d3ebc0a4efcced2076ae21f27d8714c8b7870c57
+      labels:
+        app.kubernetes.io/name: mini
+        app.kubernetes.io/instance: demo-mini
+        app.kubernetes.io/version: "9.9"
+    spec:
+      containers:
+        - name: mini
+          image: "example.org/mini:1.0"
+          ports:
+            - containerPort: 8080
+          env:
+            - name: HTTP_PROXY
+              value: "http://proxy:3128"
+            - name: NO_PROXY
+              value: ".svc,.cluster.local"
+
+
+
+---
+# Source: okdp-lib-test/templates/descriptor.yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: demo-mini-app-database-server-credentials
+  namespace: demo
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+    okdp.io/credentials-database-server: "true"
+spec:
+  refreshInterval: "0"
+  target:
+    name: demo-mini-app-database-server-credentials
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      metadata:
+        labels:
+          helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+          app.kubernetes.io/name: okdp-lib-test
+          app.kubernetes.io/instance: demo-mini
+          app.kubernetes.io/version: "1.2.3"
+          app.kubernetes.io/managed-by: Helm
+          app.kubernetes.io/part-of: okdp
+          okdp.io/instance: demo-mini
+          okdp.io/service: okdp-lib-test
+          okdp.io/credentials-database-server: "true"
+      data:
+        password: '{{ index . "password" }}'
+        username: app
+  dataFrom:
+    - rewrite:
+      - regexp:
+          source: ^password$
+          target: password
+      sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: demo-mini-app-database-server-credentials-password
+
+---
+# Source: okdp-lib-test/templates/generated.yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: demo-mini-internal
+  namespace: demo
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+spec:
+  refreshInterval: "0"
+  target:
+    name: demo-mini-internal
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      metadata:
+        labels:
+          helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+          app.kubernetes.io/name: okdp-lib-test
+          app.kubernetes.io/instance: demo-mini
+          app.kubernetes.io/version: "1.2.3"
+          app.kubernetes.io/managed-by: Helm
+          app.kubernetes.io/part-of: okdp
+          okdp.io/instance: demo-mini
+          okdp.io/service: okdp-lib-test
+      data:
+        CRYPT_KEY: '{{ index . "CRYPT_KEY" | sha256sum }}'
+        client_id: static-id
+        shared-secret: '{{ index . "shared-secret" }}'
+  dataFrom:
+    - rewrite:
+      - regexp:
+          source: ^password$
+          target: shared-secret
+      sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: demo-mini-internal-shared-secret
+    - rewrite:
+      - regexp:
+          source: ^password$
+          target: CRYPT_KEY
+      sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: demo-mini-internal-crypt-key
+
+---
+# Source: okdp-lib-test/templates/descriptor.yaml
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: demo-mini-app-database-server-credentials-password
+  namespace: demo
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+spec:
+  length: 24
+  digits: 6
+  symbols: 0
+  noUpper: false
+  allowRepeat: true
+
+---
+# Source: okdp-lib-test/templates/generated.yaml
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: demo-mini-internal-shared-secret
+  namespace: demo
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+spec:
+  length: 32
+  digits: 6
+  symbols: 0
+  noUpper: false
+  allowRepeat: true
+
+---
+# Source: okdp-lib-test/templates/generated.yaml
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: demo-mini-internal-crypt-key
+  namespace: demo
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+spec:
+  length: 32
+  digits: 6
+  symbols: 0
+  noUpper: true
+  allowRepeat: true
+---
+# Source: okdp-lib-test/templates/oidc-dcr.yaml
+# Source: vendor/oidc-dcr/templates/dcr-sa.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "demo-mini-oidc-dcr"
+  annotations:
+    # ArgoCD hooks
+    "argocd.argoproj.io/hook": PreSync
+    "argocd.argoproj.io/sync-wave": "-10"
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
+    # Helm hook
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation
+
+
+---
+# Source: okdp-lib-test/templates/oidc-dcr.yaml
+# Source: vendor/oidc-dcr/templates/dcr-sa.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "demo-mini-console-oidc-dcr"
+  annotations:
+    # ArgoCD hooks
+    "argocd.argoproj.io/hook": PreSync
+    "argocd.argoproj.io/sync-wave": "-10"
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
+    # Helm hook
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation
+
+
+---
+# Source: okdp-lib-test/templates/oidc-dcr.yaml
+apiVersion: v1
+data:
+  register.sh: |
+    #!/usr/bin/env sh
+
+    # Dependencies installation
+    apk add curl jq bind-tools kubectl
+    if [ -n "$TLS_CERTIFICATE" ]; then
+      apk add ca-certificates
+      update-ca-certificates
+    fi
+
+    # Current registration detection
+    secret=$(kubectl get secret "$SECRET_NAME" -o json 2>/dev/null)
+    if [ -n "$secret" ] >/dev/null; then
+      response=$(
+        curl "$CURL_OPTION" \
+          -H "Content-Type:application/json" \
+          -H "Authorization: Bearer $(
+            echo "$secret" | jq -r '.data.registration_access_token | @base64d'
+          )" \
+          "$(echo "$secret" | jq -r '.data.registration_client_uri | @base64d')"
+      )
+      if [ $? = "0" ] && ! echo "$response" | jq -er '.error'; then
+        echo 'INFO: Client is already registered in the OIDC provider.'
+        # The registration access token is still unchanged because no change was made to the client
+        exit 0
+      fi
+      echo 'INFO: Secret information for client exists but is not valid.'
+    fi
+
+    # DCR registration
+    echo 'INFO: DCR registration'
+    echo 'INFO: Request body'
+    echo "$REQUEST" | jq . # Log the request for debugging purposes
+    response=$(curl "$CURL_OPTION" \
+      -H "Content-Type:application/json" \
+      -d "$REQUEST" \
+      "$DCR_REGISTRATION_URL")
+    [ $? != "0" ] && {
+      >&2 echo "ERROR: Client registration HTTP request failed with exit code $?."
+      exit 1
+    }
+    error=$(echo "$response" | jq -er '.error') && { echo "ERROR: DCR request return error \"$error\""; exit 1; }
+    echo 'INFO: Client registration successful.'
+    echo 'INFO: DCR response'
+    echo "$response" | jq . # Log the response for debugging purposes
+    echo 'INFO: Secret information storage'
+
+    # Secret information storage
+    # The manifest is generated using the secret_keys variable
+    # The values that start with a dot will extract the value from the DCR response, otherwise it will use the hard-coded value
+    manifest=$(
+      echo "$response" \
+      | jq -r --arg name "$SECRET_NAME" --argjson keys "$SECRET_KEYS" '
+        (to_entries | map({ (.key): .value }) | add) as $oidc
+        | {
+            apiVersion: "v1",
+            kind: "Secret",
+            metadata: { name: $name },
+            type: "Opaque",
+            data: ($keys | map_values($oidc[. | sub("^\\."; "")] // .)) | map_values(@base64)
+        }
+      '
+    )
+    token=$(cat /run/secrets/kubernetes.io/serviceaccount/token)
+    if ! echo "$manifest" | kubectl apply --token="$token" -f -; then
+      >&2 echo "ERROR: Secret creation failed with exit code $?."
+      exit 1
+    fi
+
+    # Success
+    echo 'INFO: Client is now registered in the OIDC provider.'
+kind: ConfigMap
+metadata:
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-10"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "-10"
+  name: demo-mini-oidc-dcr
+
+---
+# Source: okdp-lib-test/templates/oidc-dcr.yaml
+apiVersion: v1
+data:
+  register.sh: |
+    #!/usr/bin/env sh
+
+    # Dependencies installation
+    apk add curl jq bind-tools kubectl
+    if [ -n "$TLS_CERTIFICATE" ]; then
+      apk add ca-certificates
+      update-ca-certificates
+    fi
+
+    # Current registration detection
+    secret=$(kubectl get secret "$SECRET_NAME" -o json 2>/dev/null)
+    if [ -n "$secret" ] >/dev/null; then
+      response=$(
+        curl "$CURL_OPTION" \
+          -H "Content-Type:application/json" \
+          -H "Authorization: Bearer $(
+            echo "$secret" | jq -r '.data.registration_access_token | @base64d'
+          )" \
+          "$(echo "$secret" | jq -r '.data.registration_client_uri | @base64d')"
+      )
+      if [ $? = "0" ] && ! echo "$response" | jq -er '.error'; then
+        echo 'INFO: Client is already registered in the OIDC provider.'
+        # The registration access token is still unchanged because no change was made to the client
+        exit 0
+      fi
+      echo 'INFO: Secret information for client exists but is not valid.'
+    fi
+
+    # DCR registration
+    echo 'INFO: DCR registration'
+    echo 'INFO: Request body'
+    echo "$REQUEST" | jq . # Log the request for debugging purposes
+    response=$(curl "$CURL_OPTION" \
+      -H "Content-Type:application/json" \
+      -d "$REQUEST" \
+      "$DCR_REGISTRATION_URL")
+    [ $? != "0" ] && {
+      >&2 echo "ERROR: Client registration HTTP request failed with exit code $?."
+      exit 1
+    }
+    error=$(echo "$response" | jq -er '.error') && { echo "ERROR: DCR request return error \"$error\""; exit 1; }
+    echo 'INFO: Client registration successful.'
+    echo 'INFO: DCR response'
+    echo "$response" | jq . # Log the response for debugging purposes
+    echo 'INFO: Secret information storage'
+
+    # Secret information storage
+    # The manifest is generated using the secret_keys variable
+    # The values that start with a dot will extract the value from the DCR response, otherwise it will use the hard-coded value
+    manifest=$(
+      echo "$response" \
+      | jq -r --arg name "$SECRET_NAME" --argjson keys "$SECRET_KEYS" '
+        (to_entries | map({ (.key): .value }) | add) as $oidc
+        | {
+            apiVersion: "v1",
+            kind: "Secret",
+            metadata: { name: $name },
+            type: "Opaque",
+            data: ($keys | map_values($oidc[. | sub("^\\."; "")] // .)) | map_values(@base64)
+        }
+      '
+    )
+    token=$(cat /run/secrets/kubernetes.io/serviceaccount/token)
+    if ! echo "$manifest" | kubectl apply --token="$token" -f -; then
+      >&2 echo "ERROR: Secret creation failed with exit code $?."
+      exit 1
+    fi
+
+    # Success
+    echo 'INFO: Client is now registered in the OIDC provider.'
+kind: ConfigMap
+metadata:
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-10"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "-10"
+  name: demo-mini-console-oidc-dcr
+
+---
+# Source: okdp-lib-test/templates/oidc-dcr.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: "demo-mini-oidc-dcr"
+  annotations:
+    # ArgoCD hooks
+    "argocd.argoproj.io/hook": PreSync
+    "argocd.argoproj.io/sync-wave": "-10"
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
+    # Helm hook
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["secrets"]
+  verbs: ["get", "list", "create", "patch"]
+
+
+---
+# Source: okdp-lib-test/templates/oidc-dcr.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: "demo-mini-console-oidc-dcr"
+  annotations:
+    # ArgoCD hooks
+    "argocd.argoproj.io/hook": PreSync
+    "argocd.argoproj.io/sync-wave": "-10"
+    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
+    # Helm hook
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["secrets"]
+  verbs: ["get", "list", "create", "patch"]
+
+
+---
+# Source: okdp-lib-test/templates/oidc-dcr.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-10"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "-10"
+  name: demo-mini-oidc-dcr
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: demo-mini-oidc-dcr
+subjects:
+- kind: ServiceAccount
+  name: demo-mini-oidc-dcr
+
+
+---
+# Source: okdp-lib-test/templates/oidc-dcr.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-10"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "-10"
+  name: demo-mini-console-oidc-dcr
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: demo-mini-console-oidc-dcr
+subjects:
+- kind: ServiceAccount
+  name: demo-mini-console-oidc-dcr
+
+---
+# Source: okdp-lib-test/templates/oidc-dcr.yaml
+# Source: vendor/oidc-dcr/templates/dcr-job.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-10"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "-10"
+  name: demo-mini-oidc-dcr-headless
+spec:
+  clusterIP: None
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    job-name: demo-mini-oidc-dcr
+
+---
+# Source: okdp-lib-test/templates/oidc-dcr.yaml
+# Source: vendor/oidc-dcr/templates/dcr-job.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-10"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "-10"
+  name: demo-mini-console-oidc-dcr-headless
+spec:
+  clusterIP: None
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    job-name: demo-mini-console-oidc-dcr
+
+---
+# Source: okdp-lib-test/templates/oidc-dcr.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-5"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "-5"
+  labels:
+    app: dcr
+  name: demo-mini-oidc-dcr
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      containers:
+      - command:
+        - /bin/sh
+        - /mnt/dcr/register.sh
+        env:
+        - name: SECRET_NAME
+          value: demo-mini-dcr
+        - name: NAMESPACE
+          value: demo
+        - name: DCR_REGISTRATION_URL
+          value: https://keycloak.okdp.sandbox/realms/master/clients-registrations/openid-connect
+        - name: REQUEST
+          value: '{"client_name":"demo-mini"}'
+        - name: SECRET_KEYS
+          value: '{"CLIENTID":".client_id","CLIENTSECRET":".client_secret","CLIENT_ID":".client_id","CLIENT_SECRET":".client_secret","ClientID":".client_id","ClientId":".client_id","ClientSecret":".client_secret","Client_ID":".client_id","Client_Secret":".client_secret","OIDC_CLIENT_ID":".client_id","OIDC_CLIENT_SECRET":".client_secret","client-id":".client_id","client-secret":".client_secret","clientId":".client_id","clientSecret":".client_secret","client_id":".client_id","client_secret":".client_secret","clientid":".client_id","clientsecret":".client_secret","oidc-client-id":".client_id","oidc-client-secret":".client_secret","oidcClientId":".client_id","oidcClientSecret":".client_secret","oidc_client_id":".client_id","oidc_client_secret":".client_secret","registration_access_token":".registration_access_token","registration_client_uri":".registration_client_uri"}'
+        - name: CURL_OPTION
+          value: -s
+        image: alpine:latest
+        name: register
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /mnt/dcr
+          name: dcr-volume
+      restartPolicy: Never
+      serviceAccountName: demo-mini-oidc-dcr
+      volumes:
+      - configMap:
+          defaultMode: 493
+          name: demo-mini-oidc-dcr
+        name: dcr-volume
+  ttlSecondsAfterFinished: 0
+
+---
+# Source: okdp-lib-test/templates/oidc-dcr.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-5"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "-5"
+  labels:
+    app: dcr
+  name: demo-mini-console-oidc-dcr
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      containers:
+      - command:
+        - /bin/sh
+        - /mnt/dcr/register.sh
+        env:
+        - name: SECRET_NAME
+          value: demo-mini-console-dcr
+        - name: NAMESPACE
+          value: demo
+        - name: DCR_REGISTRATION_URL
+          value: https://keycloak.okdp.sandbox/realms/master/clients-registrations/openid-connect
+        - name: REQUEST
+          value: '{"client_name":"demo-mini"}'
+        - name: SECRET_KEYS
+          value: '{"CLIENTID":".client_id","CLIENTSECRET":".client_secret","CLIENT_ID":".client_id","CLIENT_SECRET":".client_secret","ClientID":".client_id","ClientId":".client_id","ClientSecret":".client_secret","Client_ID":".client_id","Client_Secret":".client_secret","OIDC_CLIENT_ID":".client_id","OIDC_CLIENT_SECRET":".client_secret","client-id":".client_id","client-secret":".client_secret","clientId":".client_id","clientSecret":".client_secret","client_id":".client_id","client_secret":".client_secret","clientid":".client_id","clientsecret":".client_secret","oidc-client-id":".client_id","oidc-client-secret":".client_secret","oidcClientId":".client_id","oidcClientSecret":".client_secret","oidc_client_id":".client_id","oidc_client_secret":".client_secret","registration_access_token":".registration_access_token","registration_client_uri":".registration_client_uri"}'
+        - name: CURL_OPTION
+          value: -s
+        image: alpine:latest
+        name: register
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /mnt/dcr
+          name: dcr-volume
+      restartPolicy: Never
+      serviceAccountName: demo-mini-console-oidc-dcr
+      volumes:
+      - configMap:
+          defaultMode: 493
+          name: demo-mini-console-oidc-dcr
+        name: dcr-volume
+  ttlSecondsAfterFinished: 0
+
+---
+# Source: okdp-lib-test/templates/vendor.yaml
+# Source: vendor/mini/templates/hook.yaml
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: demo-mini-init
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: init
+          image: busybox

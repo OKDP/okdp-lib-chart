@@ -1,0 +1,5 @@
+# A bare platform: defaults of okdp.oidc, no proxy, no connection, no output.
+global:
+  okdp:
+    ingress: {suffix: example.org, className: traefik}
+    certificateIssuers: {selfSigned: {name: issuer}}

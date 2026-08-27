@@ -1,0 +1,65 @@
+---
+# Source: okdp-lib-test/templates/descriptor.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini-okdp
+  namespace: demo
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+data:
+  service: "okdp-lib-test"
+  version: "1.2.3-0.1.0"
+  url: ""
+  usage: |
+    Mini is reachable at https://mini-demo.example.org.
+  outputs.yaml: |
+    []
+
+---
+# Source: okdp-lib-test/templates/platform.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini-platform
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/component: test
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+  annotations:
+    cert-manager.io/cluster-issuer: "issuer"
+data:
+  fullname: "demo-mini"
+  ingressHost: "okdp-lib-test-demo.example.org"
+  url: "https://ui-demo.example.org"
+  className: "traefik"
+  missing: "null"
+  selectorLabels: |
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+  oidc.yaml: |
+    clientProvisioning: existing
+    dcr:
+      enabled: false
+    enabled: true
+    existing: true
+    kubauth:
+      enabled: false
+    scope: openid profile email groups
+  proxy-env.yaml: |
+    {}
+  proxy-envlist.yaml: |
+    []

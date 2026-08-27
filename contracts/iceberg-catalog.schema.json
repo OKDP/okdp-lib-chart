@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://okdp.io/schemas/contracts/iceberg-catalog.schema.json",
+  "title": "Iceberg REST catalog",
+  "description": "Iceberg REST catalog, Polaris or another implementation of the same API.",
+  "type": "object",
+  "x-okdp-contract": "iceberg-catalog",
+  "x-okdp-icon": "pi pi-database",
+  "x-okdp-category": "catalog",
+  "x-okdp-external": true,
+  "x-okdp-endpoint-from": ["internalUri", "uri"],
+  "x-okdp-internal": {
+    "uri": "https://polaris-${namespace}.${suffix}/api/catalog",
+    "internalUri": "http://${ref}-polaris.${namespace}.svc:8181/api/catalog"
+  },
+  "properties": {
+    "uri": {
+      "type": "string",
+      "title": "Catalog URI",
+      "x-ui-placeholder": "https://polaris.example.com/api/catalog"
+    },
+    "internalUri": {
+      "type": "string",
+      "title": "In-cluster URI",
+      "description": "Preferred by workloads running on this cluster. Leave empty for a catalog hosted elsewhere."
+    },
+    "realm": {
+      "type": "string",
+      "title": "Realm"
+    }
+  },
+  "required": ["uri"],
+  "additionalProperties": false
+}

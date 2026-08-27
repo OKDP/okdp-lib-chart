@@ -1,0 +1,3 @@
+# expect: unknown OKDP contract "kafka"
+test:
+  refs: [{ref: demo-kafka, contract: kafka}]

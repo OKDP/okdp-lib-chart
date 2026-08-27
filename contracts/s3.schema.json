@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://okdp.io/schemas/contracts/s3.schema.json",
+  "title": "S3 object storage",
+  "description": "S3-compatible object storage (AWS S3, MinIO, SeaweedFS, RustFS, ...). The connection carries endpoints. Consumers usually bring their own identity (an s3SecretRef parameter); secretRef is only set on stores declared by hand.",
+  "type": "object",
+  "x-okdp-contract": "s3",
+  "x-okdp-icon": "pi pi-box",
+  "x-okdp-category": "storage",
+  "x-okdp-external": true,
+  "x-okdp-endpoint-from": ["internalUrl", "apiUrl"],
+  "properties": {
+    "apiUrl": {
+      "type": "string",
+      "title": "API endpoint",
+      "description": "Leave the AWS regional endpoint out for AWS S3 itself; set it for MinIO, SeaweedFS and other S3-compatible servers.",
+      "x-ui-placeholder": "https://s3.example.com"
+    },
+    "internalUrl": {
+      "type": "string",
+      "title": "Internal URL",
+      "description": "In-cluster address, used by workloads instead of going out through the ingress.",
+      "x-ui-placeholder": "http://storage-s3.default.svc.cluster.local:8333"
+    },
+    "consoleUrl": {
+      "type": "string",
+      "title": "Console URL"
+    },
+    "bucket": {
+      "type": "string",
+      "title": "Bucket",
+      "description": "Set when the store is declared by hand. A store published by a chart leaves it unset: its consumers name their own bucket."
+    },
+    "region": {
+      "type": "string",
+      "title": "Region",
+      "default": "us-east-1"
+    },
+    "accessKey": {
+      "type": "string",
+      "title": "Access key ID",
+      "description": "Stored in the credentials Secret, under the accessKey key. An access key identifies a caller, it does not belong in a readable object.",
+      "x-okdp-secret": true
+    },
+    "secretKey": {
+      "type": "string",
+      "title": "Secret access key",
+      "description": "Stored in the credentials Secret, under the secretKey key.",
+      "x-okdp-secret": true,
+      "x-ui-widget": "password"
+    },
+    "pathStyle": {
+      "type": "boolean",
+      "title": "Path-style addressing",
+      "default": true,
+      "description": "Required by most self-hosted S3 servers. AWS S3 uses virtual-host style."
+    }
+  },
+  "required": ["apiUrl"],
+  "additionalProperties": false
+}

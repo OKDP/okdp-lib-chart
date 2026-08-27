@@ -1,0 +1,3 @@
+# expect: the s3 contract has no internal naming convention
+test:
+  refs: [{ref: demo-rustfs, contract: s3}]

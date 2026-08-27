@@ -1,0 +1,8 @@
+replicaCount: 2
+image:
+  repository: example.org/mini
+  tag: ""
+ports: [8080]
+extraEnv: {}
+hook:
+  enabled: false

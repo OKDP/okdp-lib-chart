@@ -1,0 +1,11 @@
+# Only templates/ and contracts/ ship with the library.
+tests/
+hack/
+*.md.gotmpl
+.git/
+.github/
+.gitignore
+go.mod
+*.go
+release-please-config.json
+.release-please-manifest.json

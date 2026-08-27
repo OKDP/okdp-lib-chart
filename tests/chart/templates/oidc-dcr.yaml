@@ -1,0 +1,6 @@
+{{- /* okdp.vendor.oidcDcr: two DCR clients of one release, each with its own objects. */}}
+{{- if (include "okdp.oidc" . | fromYaml).dcr.enabled }}
+{{- $values := dict "registration_url" .Values.global.okdp.oidc.dcr.registrationUrl "secret" (printf "%s-dcr" .Release.Name) "request" (dict "client_name" .Release.Name) }}
+{{ include "okdp.vendor.oidcDcr" (dict "ctx" . "values" $values) }}
+{{ include "okdp.vendor.oidcDcr" (dict "ctx" . "values" (merge (dict "secret" (printf "%s-console-dcr" .Release.Name)) $values) "name" (include "okdp.fullname" (dict "ctx" . "suffix" "console-oidc-dcr"))) }}
+{{- end }}

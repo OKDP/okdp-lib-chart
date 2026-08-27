@@ -1,0 +1,16 @@
+# Inputs of the test templates. The ci/*-values.yaml files set them.
+test:
+  ui: false
+  refs: []
+  generated: false
+  provide:
+    hive: false
+    trino: false
+    database: false
+    s3: false
+    bad: false
+  vendor:
+    enabled: false
+    chart: mini
+    replicas: 1
+    hook: false

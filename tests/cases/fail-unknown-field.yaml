@@ -1,0 +1,5 @@
+# expect: field "bukket" is not part of the s3 contract
+connections:
+  typo: {contract: s3, apiUrl: http://s3, bukket: b}
+test:
+  refs: [{ref: typo, contract: s3}]

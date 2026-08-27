@@ -1,0 +1,3 @@
+# expect: vendor/nope/Chart.yaml not found
+test:
+  vendor: {chart: nope}

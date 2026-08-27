@@ -1,0 +1,5 @@
+# expect: field "engine" is "oracle", the database-server contract allows postgresql, mysql
+connections:
+  oracle: {contract: database-server, engine: oracle, driver: x, host: h, dbName: d}
+test:
+  refs: [{ref: oracle, contract: database-server}]

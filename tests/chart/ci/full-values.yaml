@@ -1,0 +1,49 @@
+# Every helper, with a complete platform.
+global:
+  okdp:
+    ingress: {suffix: okdp.sandbox, className: nginx}
+    oidc:
+      issuerUri: https://keycloak.okdp.sandbox/realms/master
+      authUrl: https://keycloak.okdp.sandbox/realms/master/protocol/openid-connect/auth
+      tokenUrl: https://keycloak.okdp.sandbox/realms/master/protocol/openid-connect/token
+      jwksUri: https://keycloak.okdp.sandbox/realms/master/protocol/openid-connect/certs
+      clientProvisioning: dcr
+      dcr: {registrationUrl: https://keycloak.okdp.sandbox/realms/master/clients-registrations/openid-connect, authMethod: anonymous}
+    proxy: {httpProxy: "http://proxy:3128", httpsProxy: "", noProxy: ".svc,.cluster.local"}
+    certificateIssuers: {selfSigned: {name: default-issuer}}
+    storageClass: {data: standard, workspace: standard}
+connections:
+  demo-storage:
+    contract: s3
+    description: Platform S3 store
+    apiUrl: https://storage-default-api.okdp.sandbox
+    internalUrl: http://storage-s3.default.svc.cluster.local:8333
+    secretRef: {name: creds-seaweedfs-s3}
+  demo-db:
+    contract: database-server
+    host: demo-pg-rw.demo.svc.cluster.local
+    dbName: hive
+    sslMode: disable
+    secretRef: {name: demo-pg-app}
+  mysql-db:
+    contract: database-server
+    engine: mysql
+    host: mysql.example.org
+    port: 3306
+    dbName: app
+  ext-hive:
+    contract: hive
+    thriftUri: thrift://hms.example.org:9083
+test:
+  ui: true
+  generated: true
+  refs:
+    - {ref: demo-storage, contract: s3}
+    - {ref: demo-db, contract: database-server}
+    - {ref: mysql-db, contract: database-server}
+    - {ref: ext-hive, contract: hive}
+    - {ref: demo-hive, contract: hive}
+    - {ref: demo-polaris, contract: iceberg-catalog}
+    - {ref: demo-trino, contract: trino}
+  provide: {hive: true, trino: true, database: true, s3: true}
+  vendor: {enabled: true, replicas: 3, hook: true}

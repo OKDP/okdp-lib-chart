@@ -1,0 +1,23 @@
+{{- include "okdp.require" (dict "ctx" . "keys" (list "ingress.suffix" "ingress.className")) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "okdp.fullname" (dict "ctx" . "suffix" "platform") }}
+  labels:
+    {{- include "okdp.labels" (dict "ctx" . "component" "test") | nindent 4 }}
+  annotations:
+    {{- include "okdp.ingressAnnotations" . | nindent 4 }}
+data:
+  fullname: {{ include "okdp.fullname" . | quote }}
+  ingressHost: {{ include "okdp.ingressHost" . | quote }}
+  url: {{ include "okdp.url" (dict "ctx" . "name" "ui") | quote }}
+  className: {{ (include "okdp.platform.get" (dict "ctx" . "path" "ingress.className") | fromYaml).v | quote }}
+  missing: {{ (include "okdp.platform.get" (dict "ctx" . "path" "no.such.key") | fromYaml).v | toJson | quote }}
+  selectorLabels: |
+    {{- include "okdp.selectorLabels" . | nindent 4 }}
+  oidc.yaml: |
+    {{- include "okdp.oidc" . | nindent 4 }}
+  proxy-env.yaml: |
+    {{- include "okdp.proxy.env" . | nindent 4 }}
+  proxy-envlist.yaml: |
+    {{- include "okdp.proxy.envList" . | nindent 4 }}

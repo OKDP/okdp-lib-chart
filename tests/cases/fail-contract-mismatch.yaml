@@ -1,0 +1,3 @@
+# expect: connection "demo-storage" has contract "s3", "hive" is expected
+test:
+  refs: [{ref: demo-storage, contract: hive}]

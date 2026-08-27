@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://okdp.io/schemas/contracts/database-server.schema.json",
+  "title": "SQL database",
+  "description": "SQL database server. The engine tells consuming charts how to address it.",
+  "type": "object",
+  "x-okdp-contract": "database-server",
+  "x-okdp-icon": "pi pi-database",
+  "x-okdp-category": "database",
+  "x-okdp-external": true,
+  "properties": {
+    "engine": {
+      "type": "string",
+      "title": "Engine",
+      "enum": ["postgresql", "mysql"],
+      "default": "postgresql",
+      "description": "Read by consuming charts to build their JDBC URL."
+    },
+    "driver": {
+      "type": "string",
+      "title": "JDBC driver",
+      "description": "Driver class name read by charts configuring a JDBC datasource. Follows from the engine.",
+      "x-okdp-derived": {
+        "from": "engine",
+        "map": {
+          "postgresql": "org.postgresql.Driver",
+          "mysql": "com.mysql.cj.jdbc.Driver"
+        }
+      }
+    },
+    "host": {
+      "type": "string",
+      "title": "Host",
+      "x-ui-placeholder": "postgres.example.com"
+    },
+    "port": {
+      "type": "integer",
+      "title": "Port",
+      "default": 5432,
+      "minimum": 1,
+      "maximum": 65535,
+      "description": "5432 for PostgreSQL, 3306 for MySQL and MariaDB."
+    },
+    "dbName": {
+      "type": "string",
+      "title": "Database",
+      "x-ui-placeholder": "analytics"
+    },
+    "username": {
+      "type": "string",
+      "title": "User",
+      "description": "Stored in the credentials Secret, under the username key.",
+      "x-okdp-secret": true,
+      "x-okdp-required": true
+    },
+    "password": {
+      "type": "string",
+      "title": "Password",
+      "description": "Stored in the credentials Secret, under the password key.",
+      "x-okdp-secret": true,
+      "x-okdp-required": true,
+      "x-ui-widget": "password"
+    },
+    "sslMode": {
+      "type": "string",
+      "title": "TLS mode",
+      "enum": ["prefer", "require", "verify-ca", "verify-full", "disable"],
+      "default": "prefer",
+      "description": "'prefer' tries TLS and falls back to clear text if the server refuses, the safe default for a server you do not control. Use 'verify-full' when the server presents a certificate your cluster trusts.",
+      "x-ui-condition": { "field": "engine", "value": "postgresql" }
+    },
+    "tls": {
+      "type": "string",
+      "title": "TLS mode",
+      "enum": ["false", "preferred", "true", "skip-verify"],
+      "description": "MySQL accepts a different set of values from PostgreSQL. 'preferred' tries TLS and falls back to clear text.",
+      "x-ui-condition": { "field": "engine", "value": "mysql" }
+    }
+  },
+  "required": ["engine", "driver", "host", "port", "dbName"],
+  "additionalProperties": false
+}

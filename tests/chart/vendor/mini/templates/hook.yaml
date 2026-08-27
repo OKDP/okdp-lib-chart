@@ -1,0 +1,15 @@
+{{- if .Values.hook.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "mini.fullname" . }}-init
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: init
+          image: busybox
+{{- end }}

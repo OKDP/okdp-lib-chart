@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mini.fullname" . }}
+  labels:
+    {{- include "mini.labels" . | nindent 4 }}
+data:
+  script.sh: |
+    {{- .Files.Get "files/script.sh" | nindent 4 }}
+  global.suffix: {{ .Values.global.okdp.ingress.suffix | quote }}

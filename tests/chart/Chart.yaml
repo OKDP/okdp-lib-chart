@@ -1,0 +1,10 @@
+apiVersion: v2
+name: okdp-lib-test
+description: Test chart exercising every okdp-lib helper (not published).
+type: application
+version: 1.2.3-0.1.0
+appVersion: "1.2.3"
+dependencies:
+  - name: okdp-lib
+    version: 0.1.0
+    repository: file://../..

@@ -1,0 +1,5 @@
+{{- if .Values.test.generated }}
+{{ include "okdp.generatedSecret" (dict "ctx" . "name" (printf "%s-internal" .Release.Name)
+     "keys" (list (dict "key" "shared-secret" "length" 32) (dict "key" "CRYPT_KEY" "transform" "sha256" "noUpper" true))
+     "stringData" (dict "client_id" "static-id")) }}
+{{- end }}

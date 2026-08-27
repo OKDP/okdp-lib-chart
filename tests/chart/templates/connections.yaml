@@ -1,0 +1,14 @@
+{{- /* Every reference of .Values.test.refs, resolved. */ -}}
+{{- if .Values.test.refs }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "okdp.fullname" (dict "ctx" . "suffix" "connections") }}
+  labels:
+    {{- include "okdp.labels" . | nindent 4 }}
+data:
+  {{- range $i, $r := .Values.test.refs }}
+  {{ printf "%02d-%s" $i $r.ref }}: |
+    {{- include "okdp.connection" (dict "ctx" $ "ref" $r.ref "contract" $r.contract "field" (printf "test.refs[%d]" $i)) | nindent 4 }}
+  {{- end }}
+{{- end }}

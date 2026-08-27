@@ -1,0 +1,5 @@
+# expect: field "thriftUri" is required by the hive contract
+connections:
+  empty-hive: {contract: hive}
+test:
+  refs: [{ref: empty-hive, contract: hive}]

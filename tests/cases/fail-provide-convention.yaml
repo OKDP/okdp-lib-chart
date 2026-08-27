@@ -1,0 +1,3 @@
+# expect: thriftUri is "thrift://elsewhere:9083" but internal references to "demo-mini" resolve it to "thrift://demo-mini-hive-metastore.demo.svc:9083"
+test:
+  provide: {hive: false, bad: true}

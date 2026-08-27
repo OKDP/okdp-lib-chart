@@ -1,0 +1,99 @@
+# Placeholder property to use when defining this chart as a depencency in an umbrela chart.
+enabled: true
+# Name of the Alpine image used to run the script
+image: alpine:latest
+# OIDC provider registration URL.
+# eg http://keycloak-http.keycloak.svc:80/auth/realms/my-realm/clients-registrations/openid-connect/
+registration_url: ""
+# DCR information use to build the JSON request
+request: {}
+# Informations use to call DCR API
+tls:
+  insecure: false # Call the DCR API using insecure option of the curl command
+  certificate: "" # Provide a certificate to DCR job using an accessible secret
+# Name of the secret being created, default is the chart name
+secret: ""
+security:
+  # Name of the service account
+  service_account: ""
+  # Name of the role associated with the service account
+  role: ""
+# Preserve the job logs for a certain duration in seconds for debugging purposes.
+ttl_seconds: 0
+# This section is used to create the Kubernetes Secret with the OIDC client information
+mapping:
+  use_default: true # If true, all the keys defined in the key_mapping section will be included in the output. If false, only the keys defined manually in the secret_keys section will be included.
+  # This section defines the mapping between the keys in the DCR response and the keys in the chart output object.
+  key_mapping:
+    # The values starting with a "." are extracted from the DCR response (see technical reference below).
+    # For example, the value ".client_id" is interpreted using `jq` as `<DCR_Response_JSON> | .client_id` and will provide the newly register client id.
+    # Hard-coded values can also be set in this section if needed. This is useful to provide keys that are not included in the DCR response directly in the output secret.
+    # For example, the issuer URL is not provided in the DCR response but is required for OIDC authentication, so it can be set directly in the secret_keys section.
+    # The user can add additionnal keys if needed or override the existing ones using the same mecanism.
+    # --- TECHNICAL REFERENCE: KEYCLOAK DCR RESPONSE ---
+    # This list details the fields returned by the Keycloak OIDC Registration API grouped by category.
+    # [IDENTIFIERS & SECRETS]
+    # .client_id: Unique generated identifier (UUID). Required for OIDC_CLIENT_ID.
+    # .client_secret: The client's password. Required for OIDC_CLIENT_SECRET.
+    # .client_id_issued_at: Unix timestamp of when the client was created.
+    # .client_secret_expires_at: 0 means the secret never expires.
+    # NOTE: The client expiration is currently not supported by Keycloak. [See Keycloak Github discussion about this feature](https://github.com/keycloak/keycloak/discussions/9156)
+    # [FLOW CONFIGURATION]
+    # .redirect_uris: List of allowed callback URLs after authentication.
+    # .post_logout_redirect_uris: List of allowed URLs to redirect to after logging out.
+    # .grant_types: List of Authorized OAuth2 flows (e.g., authorization_code, client_credentials).
+    # .response_types: List of expected response type (e.g., code).
+    # .token_endpoint_auth_method: Auth method for the token endpoint (client_secret_basic).
+    # [DYNAMIC MANAGEMENT (DCR)]
+    # .registration_client_uri: Unique URL to read or modify this specific client.
+    # .registration_access_token: Security token required to access the registration_client_uri.
+    # [SCOPES & IDENTITY]
+    # .scope: List of granted permissions (e.g., openid, offline_access, microprofile-jwt).
+    # .subject_type: "public" (same user ID across all clients) or "pairwise".
+    # .client_name: The display name shown on the login/consent screen.
+    # [ADVANCED SECURITY]
+    # .tls_client_certificate_bound_access_tokens: Token binding to TLS certificates (mTLS).
+    # .dpop_bound_access_tokens: Use of DPoP to bind tokens to the client.
+    # .backchannel_logout_session_required: Whether Keycloak sends logout notifications in the background.
+    # .frontchannel_logout_session_required: Whether logout notifications are sent via the browser.
+    # .require_pushed_authorization_requests: Whether PAR (RFC 9126) is mandatory.
+    # .request_uris: Pre-registered list of URLs for Request Objects.
+    # --------------------------------------------------
+    # e.g: for Headlamps
+    # secret_keys:
+    #   OIDC_CLIENT_ID: ".client_id"
+    #   OIDC_CLIENT_SECRET: ".client_secret"
+    #   OIDC_ISSUER_URL: "https://keycloak.admin.k8s.demo/auth/realms/adaltas"
+    #   OIDC_SCOPES: "openid email profile"
+    # Those keys are placed in this section to be included in the output object event if `set_all_keys` is set to false.
+    registration_client_uri: ".registration_client_uri"
+    registration_access_token: ".registration_access_token"
+
+  default_keys:
+    # Client ID with various key formats to allow flexibility and to accommodate different naming conventions.
+    client_id: ".client_id" # Extraction of the "client_id" value from the DCR response
+    client-id: ".client_id" # All the alternative key formats points to the first defined values
+    clientId: ".client_id"
+    ClientId: ".client_id"
+    ClientID: ".client_id"
+    clientid: ".client_id"
+    oidc_client_id: ".client_id"
+    oidc-client-id: ".client_id"
+    oidcClientId: ".client_id"
+    OIDC_CLIENT_ID: ".client_id"
+    CLIENT_ID: ".client_id"
+    CLIENTID: ".client_id"
+    Client_ID: ".client_id"
+    # Client Secret with various key formats
+    client_secret: ".client_secret" # Extraction of the "client_secret" value from the DCR response
+    client-secret: ".client_secret"
+    clientSecret: ".client_secret"
+    ClientSecret: ".client_secret"
+    clientsecret: ".client_secret"
+    oidc_client_secret: ".client_secret"
+    oidc-client-secret: ".client_secret"
+    oidcClientSecret: ".client_secret"
+    OIDC_CLIENT_SECRET: ".client_secret"
+    CLIENT_SECRET: ".client_secret"
+    CLIENTSECRET: ".client_secret"
+    Client_Secret: ".client_secret"

@@ -1,0 +1,4 @@
+{{- if .Values.test.vendor.enabled }}
+{{- $values := dict "replicaCount" .Values.test.vendor.replicas "image" (dict "tag" "1.0") "hook" (dict "enabled" .Values.test.vendor.hook) "extraEnv" (include "okdp.proxy.env" . | fromYaml) -}}
+{{ include "okdp.vendor.render" (dict "ctx" . "chart" .Values.test.vendor.chart "values" $values) }}
+{{- end }}

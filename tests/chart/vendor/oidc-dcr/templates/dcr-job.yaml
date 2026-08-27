@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dcr-headless
+  annotations:
+{{ include "hooks.ressources" . | indent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    job-name: dcr
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dcr
+  annotations:
+{{ include "hooks.ressources" . | indent 4 }}
+data:
+  register.sh: |
+{{ .Files.Get "scripts/register.sh" | indent 4 }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dcr
+  labels:
+    app: dcr
+  annotations:
+{{ include "hooks.job" . | indent 4 }}
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: {{ .Values.ttl_seconds }}
+  template:
+    spec:
+      containers:
+        - name: register
+          image: {{ .Values.image }}
+          command: ["/bin/sh", "/mnt/dcr/register.sh"]
+          env:
+            - name: SECRET_NAME
+              value: {{ include "secret.name" . | quote }}
+            - name: NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            - name: DCR_REGISTRATION_URL
+              value: {{ .Values.registration_url | quote }}
+            - name: REQUEST
+              value: {{ .Values.request | toJson | quote }}
+            - name: SECRET_KEYS
+              value: {{ include "secret.keys" . | fromYaml | toJson | quote }}
+            - name: CURL_OPTION
+              {{- if .Values.tls.insecure }}
+              value: "-sk"
+              {{- else }}
+              value: "-s"
+              {{- end }}
+            {{- if (ne .Values.tls.certificate "") }}
+            - name: TLS_CERTIFICATE
+              value: {{ .Values.tls.certificate | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: dcr-volume
+              mountPath: /mnt/dcr
+              {{- if include "volume_mount.secret" . }}
+              {{- include "volume_mount.secret" . | nindent 12 -}}
+              {{- end }}
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+      serviceAccountName: {{ include "service_account.name" . }}
+      volumes:
+        - name: dcr-volume
+          configMap:
+            defaultMode: 493
+            name: dcr
+        {{- if include "volume.secret" . }}
+        {{- include "volume.secret" . | nindent 8 -}}
+        {{- end }}
+      restartPolicy: Never

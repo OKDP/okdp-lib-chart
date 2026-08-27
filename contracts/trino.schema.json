@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://okdp.io/schemas/contracts/trino.schema.json",
+  "title": "Trino",
+  "description": "Trino distributed SQL query engine. Publishes URIs rather than a host and a port.",
+  "type": "object",
+  "x-okdp-contract": "trino",
+  "x-okdp-icon": "pi pi-server",
+  "x-okdp-category": "query-engine",
+  "x-okdp-external": true,
+  "x-okdp-endpoint-from": ["internalUri", "uri", "url"],
+  "x-okdp-internal": {
+    "url": "https://trino-${namespace}.${suffix}",
+    "uri": "trino://trino@trino-${namespace}.${suffix}:443",
+    "internalUri": "trino://trino@${ref}-trino.${namespace}.svc:8080"
+  },
+  "properties": {
+    "url": {
+      "type": "string",
+      "title": "URL",
+      "description": "Address a human opens in a browser or a BI tool.",
+      "x-ui-placeholder": "https://trino.example.com"
+    },
+    "uri": {
+      "type": "string",
+      "title": "Trino URI",
+      "description": "SQLAlchemy/JDBC style URI read by charts configuring a datasource.",
+      "x-ui-placeholder": "trino://trino@trino.example.com:443"
+    },
+    "internalUri": {
+      "type": "string",
+      "title": "In-cluster URI",
+      "description": "Preferred by workloads running on this cluster. Leave empty for a Trino hosted elsewhere.",
+      "x-ui-placeholder": "trino://trino@trino.analytics.svc:8080"
+    },
+    "catalogs": {
+      "type": "array",
+      "title": "Catalogs",
+      "description": "Catalog names this Trino serves.",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["url", "uri"],
+  "additionalProperties": false
+}
