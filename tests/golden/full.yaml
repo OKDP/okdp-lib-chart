@@ -457,16 +457,16 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: "demo-mini-oidc-dcr"
   annotations:
-    # ArgoCD hooks
-    "argocd.argoproj.io/hook": PreSync
-    "argocd.argoproj.io/sync-wave": "-10"
-    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
-    # Helm hook
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "-10"
-    "helm.sh/hook-delete-policy": before-hook-creation
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-10"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "-10"
+  labels:
+    app.kubernetes.io/instance: demo-mini
+  name: demo-mini-oidc-dcr
 
 
 ---
@@ -475,16 +475,16 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: "demo-mini-console-oidc-dcr"
   annotations:
-    # ArgoCD hooks
-    "argocd.argoproj.io/hook": PreSync
-    "argocd.argoproj.io/sync-wave": "-10"
-    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
-    # Helm hook
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "-10"
-    "helm.sh/hook-delete-policy": before-hook-creation
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-10"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "-10"
+  labels:
+    app.kubernetes.io/instance: demo-mini
+  name: demo-mini-console-oidc-dcr
 
 
 ---
@@ -571,6 +571,8 @@ metadata:
     helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-delete-policy: before-hook-creation
     helm.sh/hook-weight: "-10"
+  labels:
+    app.kubernetes.io/instance: demo-mini
   name: demo-mini-oidc-dcr
 
 ---
@@ -657,6 +659,8 @@ metadata:
     helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-delete-policy: before-hook-creation
     helm.sh/hook-weight: "-10"
+  labels:
+    app.kubernetes.io/instance: demo-mini
   name: demo-mini-console-oidc-dcr
 
 ---
@@ -664,20 +668,26 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: "demo-mini-oidc-dcr"
   annotations:
-    # ArgoCD hooks
-    "argocd.argoproj.io/hook": PreSync
-    "argocd.argoproj.io/sync-wave": "-10"
-    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
-    # Helm hook
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "-10"
-    "helm.sh/hook-delete-policy": before-hook-creation
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-10"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "-10"
+  labels:
+    app.kubernetes.io/instance: demo-mini
+  name: demo-mini-oidc-dcr
 rules:
-- apiGroups: [""] # "" indicates the core API group
-  resources: ["secrets"]
-  verbs: ["get", "list", "create", "patch"]
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - create
+  - patch
 
 
 ---
@@ -685,20 +695,26 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: "demo-mini-console-oidc-dcr"
   annotations:
-    # ArgoCD hooks
-    "argocd.argoproj.io/hook": PreSync
-    "argocd.argoproj.io/sync-wave": "-10"
-    "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation
-    # Helm hook
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "-10"
-    "helm.sh/hook-delete-policy": before-hook-creation
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-10"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "-10"
+  labels:
+    app.kubernetes.io/instance: demo-mini
+  name: demo-mini-console-oidc-dcr
 rules:
-- apiGroups: [""] # "" indicates the core API group
-  resources: ["secrets"]
-  verbs: ["get", "list", "create", "patch"]
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - create
+  - patch
 
 
 ---
@@ -713,6 +729,8 @@ metadata:
     helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-delete-policy: before-hook-creation
     helm.sh/hook-weight: "-10"
+  labels:
+    app.kubernetes.io/instance: demo-mini
   name: demo-mini-oidc-dcr
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -735,6 +753,8 @@ metadata:
     helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-delete-policy: before-hook-creation
     helm.sh/hook-weight: "-10"
+  labels:
+    app.kubernetes.io/instance: demo-mini
   name: demo-mini-console-oidc-dcr
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -757,6 +777,8 @@ metadata:
     helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-delete-policy: before-hook-creation
     helm.sh/hook-weight: "-10"
+  labels:
+    app.kubernetes.io/instance: demo-mini
   name: demo-mini-oidc-dcr-headless
 spec:
   clusterIP: None
@@ -780,6 +802,8 @@ metadata:
     helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-delete-policy: before-hook-creation
     helm.sh/hook-weight: "-10"
+  labels:
+    app.kubernetes.io/instance: demo-mini
   name: demo-mini-console-oidc-dcr-headless
 spec:
   clusterIP: None
@@ -804,10 +828,14 @@ metadata:
     helm.sh/hook-weight: "-5"
   labels:
     app: dcr
+    app.kubernetes.io/instance: demo-mini
   name: demo-mini-oidc-dcr
 spec:
   backoffLimit: 1
   template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: demo-mini
     spec:
       containers:
       - command:
@@ -858,10 +886,14 @@ metadata:
     helm.sh/hook-weight: "-5"
   labels:
     app: dcr
+    app.kubernetes.io/instance: demo-mini
   name: demo-mini-console-oidc-dcr
 spec:
   backoffLimit: 1
   template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: demo-mini
     spec:
       containers:
       - command:
