@@ -24,7 +24,8 @@ Arguments:
   ctx     the root context ($).
   chart   the directory name under vendor/.
   values  the values, merged over vendor/<chart>/values.yaml (maps merge, lists
-          and scalars replace; a null does NOT delete a default, unlike Helm).
+          and scalars replace; a null sets the key to null where Helm would
+          delete it, which reads the same in templates except for hasKey).
           .Values.global of the wrapper is passed down as global.
 
 The upstream templates see .Values, .Release (the wrapper's release, so names
@@ -35,7 +36,8 @@ vendored directory. Partials (_*.tpl) of the chart and of its library
 subcharts are loaded; templates/tests/ and NOTES.txt are skipped. A vendored
 chart that bundles an application subchart is refused: vendor and render that
 subchart on its own. Hooks keep their annotations, so they behave as in the
-upstream chart.
+upstream chart. Objects and pod templates missing the label
+app.kubernetes.io/instance get it (pass "instanceLabel" false to opt out).
 */}}
 {{- define "okdp.vendor.render" -}}
 {{- $ctx := .ctx -}}
@@ -95,17 +97,78 @@ upstream chart.
     {{- $manifests = append $manifests $path -}}
   {{- end -}}
 {{- end -}}
+{{- /*
+One template text, like Helm's own render of a chart: the partials, then every
+manifest at top level (so a `define` inside a manifest works and is visible to
+the others), each introduced by a separator printed by an action (so the
+whitespace trimming of the upstream `{{-`/`-}}` cannot eat it). Manifests
+without a `define` are also registered under their path, for
+`include (print $.Template.BasePath "/x.yaml") .` (checksum annotations).
+*/ -}}
 {{- $bundle := "" -}}
 {{- range $path := $partials -}}
   {{- $bundle = print $bundle (include "okdp.vendor.files" (dict "content" ($ctx.Files.Get $path) "dir" $dir)) "\n" -}}
 {{- end -}}
 {{- range $path := $manifests -}}
-  {{- $bundle = print $bundle "{{ define " (quote $path) " }}" (include "okdp.vendor.files" (dict "content" ($ctx.Files.Get $path) "dir" $dir)) "{{ end }}\n" -}}
+  {{- $content := include "okdp.vendor.files" (dict "content" ($ctx.Files.Get $path) "dir" $dir) -}}
+  {{- if not (regexMatch "{{-?\\s*define\\s" $content) -}}
+    {{- $bundle = print $bundle "{{ define " (quote $path) " }}" $content "{{ end }}\n" -}}
+  {{- end -}}
 {{- end -}}
 {{- range $path := $manifests -}}
-  {{- $bundle = print $bundle "\n---\n# Source: " $path "\n{{ include " (quote $path) " . }}\n" -}}
+  {{- $bundle = print $bundle "{{ " (quote (printf "\n---\n# Source: %s\n" $path)) " }}" (include "okdp.vendor.files" (dict "content" ($ctx.Files.Get $path) "dir" $dir)) -}}
 {{- end -}}
-{{- tpl $bundle $root -}}
+{{- $rendered := tpl $bundle $root -}}
+{{- if eq (toString (.instanceLabel | default "true")) "false" -}}
+{{- $rendered -}}
+{{- else -}}
+{{- include "okdp.vendor.instanceLabel" (dict "rendered" $rendered "release" $ctx.Release.Name) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+okdp.vendor.instanceLabel: internal. Adds app.kubernetes.io/instance: <release>
+where an upstream chart leaves it out: on every object, and on the pod
+template of workloads (the console finds pods by it). Selectors are left
+alone. Documents that need no change are passed through untouched; the others
+are re-serialised (same content, keys sorted, comments dropped).
+*/}}
+{{- define "okdp.vendor.instanceLabel" -}}
+{{- $key := "app.kubernetes.io/instance" -}}
+{{- $release := .release -}}
+{{- range $doc := regexSplit "(?m)^---[ \\t]*$" .rendered -1 -}}
+  {{- $obj := fromYaml $doc -}}
+  {{- if or (not $obj) (hasKey $obj "Error") (not (kindIs "map" $obj.metadata)) -}}
+{{ print "\n---" $doc }}
+  {{- else -}}
+    {{- $changed := false -}}
+    {{- $meta := $obj.metadata -}}
+    {{- $labels := $meta.labels | default dict -}}
+    {{- if not (hasKey $labels $key) -}}
+      {{- $_ := set $labels $key $release -}}{{- $_ := set $meta "labels" $labels -}}{{- $changed = true -}}
+    {{- end -}}
+    {{- $tpl := dict -}}
+    {{- if has (toString $obj.kind) (list "Deployment" "StatefulSet" "DaemonSet" "ReplicaSet" "Job") -}}
+      {{- $tpl = (($obj.spec | default dict).template) | default dict -}}
+    {{- else if eq (toString $obj.kind) "CronJob" -}}
+      {{- $tpl = (((($obj.spec | default dict).jobTemplate | default dict).spec | default dict).template) | default dict -}}
+    {{- end -}}
+    {{- if $tpl -}}
+      {{- $podMeta := $tpl.metadata | default dict -}}
+      {{- $podLabels := $podMeta.labels | default dict -}}
+      {{- if not (hasKey $podLabels $key) -}}
+        {{- $_ := set $podLabels $key $release -}}{{- $_ := set $podMeta "labels" $podLabels -}}{{- $_ := set $tpl "metadata" $podMeta -}}{{- $changed = true -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if $changed }}
+---
+{{ regexFind "# Source: [^\\n]*" $doc }}
+{{ toYaml $obj }}
+    {{- else -}}
+{{ print "\n---" $doc }}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
 {{- end -}}
 
 {{/*

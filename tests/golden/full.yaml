@@ -241,6 +241,23 @@ data:
 
 ---
 # Source: okdp-lib-test/templates/vendor.yaml
+# Source: vendor/mini/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/instance: demo-mini
+  name: demo-mini
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+
+---
+# Source: okdp-lib-test/templates/vendor.yaml
 # Source: vendor/mini/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -933,17 +950,21 @@ spec:
 ---
 # Source: okdp-lib-test/templates/vendor.yaml
 # Source: vendor/mini/templates/hook.yaml
-
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: demo-mini-init
   annotations:
     helm.sh/hook: post-install,post-upgrade
+  labels:
+    app.kubernetes.io/instance: demo-mini
+  name: demo-mini-init
 spec:
   template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: demo-mini
     spec:
-      restartPolicy: Never
       containers:
-        - name: init
-          image: busybox
+      - image: busybox
+        name: init
+      restartPolicy: Never

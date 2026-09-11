@@ -204,7 +204,8 @@ scripts/vendor-charts.sh --check packages/services/trino  # CI: vendor/ matches 
 ```
 
 The values are merged over the vendored `values.yaml` (maps merge, lists and
-scalars replace, a `null` does not delete a default). The upstream templates
+scalars replace; a `null` sets the key to null where Helm would delete it,
+which templates read the same except `hasKey`). The upstream templates
 see the wrapper's `.Release` (names and `app.kubernetes.io/instance` derive from
 `<project>-<instance>`), `.Chart` from the vendored `Chart.yaml`,
 `.Capabilities`, `.Template.BasePath` and `.Files` (literal `.Files.Get "x"`
@@ -212,6 +213,12 @@ paths are redirected to the vendored directory). Partials of the chart and of
 its library subcharts load; `templates/tests/` and `NOTES.txt` are skipped;
 hook annotations are kept. A vendored chart bundling an application subchart
 is refused: vendor that subchart separately.
+
+Objects and workload pod templates without `app.kubernetes.io/instance` get
+it (the console finds workloads by it); only those documents are
+re-serialised. Pass `"instanceLabel" false` to leave the output untouched.
+Upstream `values.schema.json` files are not enforced (Helm offers no schema
+validation function to templates).
 
 The upstream chart must itself respect the forbidden patterns (no `lookup`,
 no random function, hooks limited to pre/post-install/upgrade): review it when

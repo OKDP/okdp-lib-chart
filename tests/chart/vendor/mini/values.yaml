@@ -6,3 +6,4 @@ ports: [8080]
 extraEnv: {}
 hook:
   enabled: false
+rbac: true
