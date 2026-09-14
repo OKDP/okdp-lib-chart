@@ -30,7 +30,9 @@ Arguments:
   labels      optional extra labels.
   namespace   optional, default the release namespace.
   refreshInterval  default "0": generated once, never rotated. ESO regenerates
-              only if the ExternalSecret itself is recreated.
+              only if the ExternalSecret is recreated or the Secret deleted.
+              ESO never applies a later spec change either (keys, stringData):
+              change the keys by rendering a new Secret name.
   apiVersion  ExternalSecret apiVersion, default external-secrets.io/v1
               (served since ESO 0.16; ESO >= 0.17 no longer serves v1beta1).
               The Password generators stay generators.external-secrets.io/v1alpha1.

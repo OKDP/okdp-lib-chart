@@ -179,6 +179,15 @@ defaults to `external-secrets.io/v1` (ESO >= 0.17 serves only `v1`; the
 `Password` generators are `generators.external-secrets.io/v1alpha1`).
 Nothing random is ever computed by Helm, so `helm template` is deterministic.
 
+The generated Secret is **frozen once written** (verified on ESO 0.15.1):
+with `refreshInterval: "0"` ESO never re-reads the ExternalSecret, so a later
+change to its spec (a key added or removed, a new `stringData` value, new
+labels) never reaches the Secret, and forcing a refresh would regenerate every
+key. To change the keys, render a new Secret name (e.g. suffix `-v2`) and point
+the consumers at it; that regenerates its values. Deleting the Secret makes
+ESO regenerate it. ESO >= 0.16 keeps this behaviour by default (`refreshPolicy`
+unset = `Periodic`, no refresh at interval 0).
+
 ### Upstream charts: `okdp.vendor.render`
 
 A Helm dependency only receives static values; a KuboCD module computed them.
