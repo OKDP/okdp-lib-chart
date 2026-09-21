@@ -219,6 +219,15 @@ charts:
     version: 1.42.1
 ```
 
+`vendor.yaml` entries take exactly `name` (directory under `vendor/`),
+`repository` (`https://`, `oci://` or `file://<path relative to the wrapper>`),
+`version` (exact), optional `chart` (upstream name, default `name`) and
+optional `drop` (paths relative to the vendored chart root removed after
+unpacking, e.g. `charts/postgresql` for a bundled subchart the wrapper
+disables, or `templates/secret.yaml`; no `..`, each must exist). Any other key
+fails. `scripts/vendor-charts.sh` of `OKDP/platform-packages` is canonical: the copies in
+other repositories stay identical to it.
+
 ```sh
 scripts/vendor-charts.sh packages/services/trino          # unpack under vendor/trino
 scripts/vendor-charts.sh --check packages/services/trino  # CI: vendor/ matches vendor.yaml
