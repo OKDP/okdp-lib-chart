@@ -27,6 +27,12 @@ Mini is reachable at {{ include "okdp.url" (dict "ctx" . "name" "mini") }}.
 {{ include "okdp.contract.s3.provide" (dict "ctx" . "name" (printf "%s-store" .Release.Name)
      "values" (dict "apiUrl" "http://store.example:8333")
      "secret" (dict "stringData" (dict "accessKey" "a" "secretKey" "b"))) }}
+{{- /* A Secret created by something else: named, not rendered. */}}
+{{ include "okdp.contract.s3.provide" (dict "ctx" . "name" (printf "%s-shared" .Release.Name)
+     "values" (dict "apiUrl" "http://store.example:8333") "secretRef" "store-shared-creds") }}
+{{- /* No credentials: consumers bring their own, no secretRef. */}}
+{{ include "okdp.contract.s3.provide" (dict "ctx" . "name" (printf "%s-open" .Release.Name)
+     "values" (dict "apiUrl" "http://store.example:8333")) }}
 {{- end }}
 {{- if .Values.test.provide.bad }}
 {{ include "okdp.contract.hive.provide" (dict "ctx" . "values" (dict "thriftUri" "thrift://elsewhere:9083")) }}

@@ -27,7 +27,7 @@ spec:
             - name: TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "mini.fullname" . }}-own
+                  name: {{ .Release.Name }}-own
                   key: token
             {{- range $k, $v := .Values.extraEnv }}
             - name: {{ $k }}

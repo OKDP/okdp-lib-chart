@@ -80,14 +80,16 @@ Resolution:
      Secret fields must not be there (they live in the Secret of secretRef).
   2. otherwise an internal OKDP instance named <ref> in the release namespace:
      the fields come from the contract's naming convention (x-okdp-internal in
-     the contract schema, placeholders ${ref} ${namespace} ${suffix}), and
-     secretRef.name is <ref>-<contract>-credentials. Contracts without a
+     the contract schema, placeholders ${ref} ${namespace} ${suffix}), and,
+     only for contracts with secret fields, secretRef.name is
+     <ref>-<contract>-credentials. Contracts without a
      naming convention (s3, database-server) must be declared as connections.
 Then derived fields (x-okdp-derived) and defaults are filled in and the
 required fields checked.
 
 Result: the contract's non-secret fields, plus
-  secretRef: {name: ...}   when known (always for internal references)
+  secretRef: {name: ...}   when known (external connection with a secretRef, or
+                           internal reference to a contract with secret fields)
   okdp: {ref, contract, source: external|internal}
 */}}
 {{- define "okdp.connection" -}}
@@ -142,7 +144,13 @@ Result: the contract's non-secret fields, plus
     {{- end -}}
     {{- $_ := set $out $k ($tpl | replace "${ref}" $ref | replace "${namespace}" $ctx.Release.Namespace | replace "${suffix}" $suffix) -}}
   {{- end -}}
-  {{- $_ := set $out "secretRef" (dict "name" (printf "%s-%s-credentials" $ref $contract)) -}}
+  {{- $hasSecret := false -}}
+  {{- range $_, $p := $schema.properties -}}
+    {{- if index $p "x-okdp-secret" }}{{ $hasSecret = true }}{{ end -}}
+  {{- end -}}
+  {{- if $hasSecret -}}
+    {{- $_ := set $out "secretRef" (dict "name" (printf "%s-%s-credentials" $ref $contract)) -}}
+  {{- end -}}
 {{- end -}}
 {{- $fields := omit $out "secretRef" -}}
 {{- include "okdp.contract.complete" (dict "schema" $schema "values" $fields "where" (printf "%s (connection %q)" $where $ref)) -}}

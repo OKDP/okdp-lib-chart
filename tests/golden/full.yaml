@@ -81,8 +81,6 @@ data:
       contract: hive
       ref: demo-hive
       source: internal
-    secretRef:
-      name: demo-hive-hive-credentials
     thriftUri: thrift://demo-hive-hive-metastore.demo.svc:9083
   05-demo-polaris: |
     internalUri: http://demo-polaris-polaris.demo.svc:8181/api/catalog
@@ -90,8 +88,6 @@ data:
       contract: iceberg-catalog
       ref: demo-polaris
       source: internal
-    secretRef:
-      name: demo-polaris-iceberg-catalog-credentials
     uri: https://polaris-demo.okdp.sandbox/api/catalog
   06-demo-trino: |
     internalUri: trino://trino@demo-trino-trino.demo.svc:8080
@@ -99,8 +95,6 @@ data:
       contract: trino
       ref: demo-trino
       source: internal
-    secretRef:
-      name: demo-trino-trino-credentials
     uri: trino://trino@trino-demo.okdp.sandbox:443
     url: https://trino-demo.okdp.sandbox
 
@@ -133,14 +127,10 @@ data:
   outputs.yaml: |
     - contract: hive
       name: demo-mini
-      secretRef:
-        name: demo-mini-hive-credentials
       values:
         thriftUri: thrift://demo-mini-hive-metastore.demo.svc:9083
     - contract: trino
       name: demo-mini
-      secretRef:
-        name: demo-mini-trino-credentials
       values:
         catalogs:
         - tpch
@@ -163,6 +153,20 @@ data:
       name: demo-mini-store
       secretRef:
         name: demo-mini-store-s3-credentials
+      values:
+        apiUrl: http://store.example:8333
+        pathStyle: true
+        region: us-east-1
+    - contract: s3
+      name: demo-mini-shared
+      secretRef:
+        name: store-shared-creds
+      values:
+        apiUrl: http://store.example:8333
+        pathStyle: true
+        region: us-east-1
+    - contract: s3
+      name: demo-mini-open
       values:
         apiUrl: http://store.example:8333
         pathStyle: true

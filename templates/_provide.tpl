@@ -23,8 +23,10 @@ Arguments:
             filled in, required fields checked, secret fields refused.
   name      optional, the connection name. Default: the release name, which is
             what internal references (okdp.connection) resolve.
-  secretRef optional, the name of the credentials Secret.
-            Default: <name>-<contract>-credentials.
+  secretRef optional, the name of the credentials Secret consumers use. The
+            entry has no secretRef unless one is given here or `secret` is
+            (then default <name>-<contract>-credentials): an output never
+            points at a Secret that nobody creates.
   secret    optional, how the chart renders that Secret (see okdp.descriptor):
               {stringData: {<key>: <value>}}             a plain Secret
               {generate: [<okdp.generatedSecret key>], stringData: {...}}
@@ -63,7 +65,10 @@ that a consumer referencing this instance by name gets the same fields.
     {{- end -}}
   {{- end -}}
 {{- end -}}
-{{- $entry := dict "name" $name "contract" $contract "values" $values "secretRef" (dict "name" (.secretRef | default (printf "%s-%s-credentials" $name $contract))) -}}
+{{- $entry := dict "name" $name "contract" $contract "values" $values -}}
+{{- if or .secretRef .secret -}}
+  {{- $_ := set $entry "secretRef" (dict "name" (.secretRef | default (printf "%s-%s-credentials" $name $contract))) -}}
+{{- end -}}
 {{- with .secret }}{{ $_ := set $entry "secret" . }}{{ end -}}
 {{- toYaml (list $entry) -}}
 {{- end -}}
