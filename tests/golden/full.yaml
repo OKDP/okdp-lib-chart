@@ -400,6 +400,80 @@ spec:
           kind: Password
           name: demo-mini-internal-crypt-key
 
+
+---
+# Source: okdp-lib-test/templates/generated.yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: demo-mini-kept-with-a-rather-long-secret-name
+  namespace: demo
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+    helm.sh/resource-policy: keep
+spec:
+  refreshInterval: "0"
+  target:
+    name: demo-mini-kept-with-a-rather-long-secret-name
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      type: Opaque
+      metadata:
+        labels:
+          helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+          app.kubernetes.io/name: okdp-lib-test
+          app.kubernetes.io/instance: demo-mini
+          app.kubernetes.io/version: "1.2.3"
+          app.kubernetes.io/managed-by: Helm
+          app.kubernetes.io/part-of: okdp
+          okdp.io/instance: demo-mini
+          okdp.io/service: okdp-lib-test
+      data:
+        fernet-key: '{{ index . "fernet-key" | b64enc }}'
+        hub.config.ConfigurableHTTPProxy.auth_token: '{{ index . "hub.config.ConfigurableHTTPProxy.auth_token"
+          }}'
+        hub.config.ConfigurableHTTPProxy.auth_token_2: '{{ index . "hub.config.ConfigurableHTTPProxy.auth_token_2"
+          }}'
+        motd: '{{ "Hello {{ .user }}, see \"docs\"" }}'
+  dataFrom:
+    - rewrite:
+      - regexp:
+          source: ^password$
+          target: fernet-key
+      sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: demo-mini-kept-with-a-rather-long-secret-name-fernet-key
+    - rewrite:
+      - regexp:
+          source: ^password$
+          target: hub.config.ConfigurableHTTPProxy.auth_token
+      sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: demo-mini-kept-with-a-rather-long-secret-name-hub-conf-06630844
+    - rewrite:
+      - regexp:
+          source: ^password$
+          target: hub.config.ConfigurableHTTPProxy.auth_token_2
+      sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: demo-mini-kept-with-a-rather-long-secret-name-hub-conf-97d19663
+
 ---
 # Source: okdp-lib-test/templates/descriptor.yaml
 apiVersion: generators.external-secrets.io/v1alpha1
@@ -467,6 +541,84 @@ spec:
   digits: 6
   symbols: 0
   noUpper: true
+  allowRepeat: true
+
+---
+# Source: okdp-lib-test/templates/generated.yaml
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: demo-mini-kept-with-a-rather-long-secret-name-fernet-key
+  namespace: demo
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+    helm.sh/resource-policy: keep
+spec:
+  length: 32
+  digits: 6
+  symbols: 0
+  noUpper: false
+  allowRepeat: true
+
+---
+# Source: okdp-lib-test/templates/generated.yaml
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: demo-mini-kept-with-a-rather-long-secret-name-hub-conf-06630844
+  namespace: demo
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+    helm.sh/resource-policy: keep
+spec:
+  length: 64
+  digits: 10
+  symbols: 0
+  noUpper: false
+  allowRepeat: true
+
+---
+# Source: okdp-lib-test/templates/generated.yaml
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: demo-mini-kept-with-a-rather-long-secret-name-hub-conf-97d19663
+  namespace: demo
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+    helm.sh/resource-policy: keep
+spec:
+  length: 64
+  digits: 10
+  symbols: 0
+  noUpper: false
   allowRepeat: true
 ---
 # Source: okdp-lib-test/templates/oidc-dcr.yaml

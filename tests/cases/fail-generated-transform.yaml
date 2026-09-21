@@ -1,0 +1,3 @@
+# expect: okdp.generatedSecret: unknown transform "md5" (supported: sha256, b64enc)
+test:
+  generatedTransform: md5

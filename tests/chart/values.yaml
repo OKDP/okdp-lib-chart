@@ -3,6 +3,7 @@ test:
   ui: false
   refs: []
   generated: false
+  generatedTransform: ""
   provide:
     hive: false
     trino: false

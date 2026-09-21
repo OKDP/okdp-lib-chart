@@ -2,4 +2,17 @@
 {{ include "okdp.generatedSecret" (dict "ctx" . "name" (printf "%s-internal" .Release.Name)
      "keys" (list (dict "key" "shared-secret" "length" 32) (dict "key" "CRYPT_KEY" "transform" "sha256" "noUpper" true))
      "stringData" (dict "client_id" "static-id")) }}
+{{- /* Annotations, b64enc, a Secret type, a static value with template
+delimiters, and two long keys whose generator names would collide once cut
+at 63 characters (they get a hash suffix instead). */}}
+{{ include "okdp.generatedSecret" (dict "ctx" . "name" (printf "%s-kept-with-a-rather-long-secret-name" .Release.Name) "type" "Opaque"
+     "keys" (list
+       (dict "key" "fernet-key" "transform" "b64enc")
+       (dict "key" "hub.config.ConfigurableHTTPProxy.auth_token" "length" 64 "digits" 10)
+       (dict "key" "hub.config.ConfigurableHTTPProxy.auth_token_2" "length" 64 "digits" 10))
+     "stringData" (dict "motd" "Hello {{ .user }}, see \"docs\"")
+     "annotations" (dict "helm.sh/resource-policy" "keep" "argocd.argoproj.io/sync-options" "Delete=false")) }}
+{{- end }}
+{{- with .Values.test.generatedTransform }}
+{{ include "okdp.generatedSecret" (dict "ctx" $ "name" "bad" "keys" (list (dict "key" "k" "transform" .))) }}
 {{- end }}
