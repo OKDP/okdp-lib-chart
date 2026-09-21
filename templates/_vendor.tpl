@@ -32,8 +32,9 @@ The upstream templates see .Values, .Release (the wrapper's release, so names
 and app.kubernetes.io/instance derive from <project>-<instance>), .Chart
 (from vendor/<chart>/Chart.yaml), .Capabilities, .Template.BasePath and
 .Files, where literal `.Files.Get "x"` / `.Files.Glob "x"` are rewritten to the
-vendored directory. Partials (_*.tpl) of the chart and of its library
-subcharts are loaded; templates/tests/ and NOTES.txt are skipped. A vendored
+vendored directory. Partials (templates/_*, of the chart and of its library
+subcharts) are loaded and, as with Helm, what they print outside a define is
+discarded; templates/tests/ and NOTES.txt are skipped. A vendored
 chart that bundles an application subchart is refused: vendor and render that
 subchart on its own. Hooks keep their annotations, so they behave as in the
 upstream chart. Objects and pod templates missing the label
@@ -98,7 +99,8 @@ app.kubernetes.io/instance get it (pass "instanceLabel" false to opt out).
   {{- end -}}
 {{- end -}}
 {{- /*
-One template text, like Helm's own render of a chart: the partials, then every
+One template text, like Helm's own render of a chart: the partials (whatever
+they print outside a define is dropped, up to a marker), then every
 manifest at top level (so a `define` inside a manifest works and is visible to
 the others), each introduced by a separator printed by an action (so the
 whitespace trimming of the upstream `{{-`/`-}}` cannot eat it). Manifests
@@ -106,6 +108,7 @@ without a `define` are also registered under their path, for
 `include (print $.Template.BasePath "/x.yaml") .` (checksum annotations).
 */ -}}
 {{- $bundle := "" -}}
+{{- $marker := "@@okdp.vendor.render: end of partials@@" -}}
 {{- range $path := $partials -}}
   {{- $bundle = print $bundle (include "okdp.vendor.files" (dict "content" ($ctx.Files.Get $path) "dir" $dir)) "\n" -}}
 {{- end -}}
@@ -115,10 +118,12 @@ without a `define` are also registered under their path, for
     {{- $bundle = print $bundle "{{ define " (quote $path) " }}" $content "{{ end }}\n" -}}
   {{- end -}}
 {{- end -}}
+{{- $bundle = print $bundle "{{ " (quote $marker) " }}" -}}
 {{- range $path := $manifests -}}
   {{- $bundle = print $bundle "{{ " (quote (printf "\n---\n# Source: %s\n" $path)) " }}" (include "okdp.vendor.files" (dict "content" ($ctx.Files.Get $path) "dir" $dir)) -}}
 {{- end -}}
-{{- $rendered := tpl $bundle $root -}}
+{{- /* Helm discards what partials print outside their defines: so do we. */ -}}
+{{- $rendered := (splitn $marker 2 (tpl $bundle $root))._1 -}}
 {{- if eq (toString (.instanceLabel | default "true")) "false" -}}
 {{- $rendered -}}
 {{- else -}}
@@ -168,6 +173,130 @@ are re-serialised (same content, keys sorted, comments dropped).
 {{ print "\n---" $doc }}
     {{- end -}}
   {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+okdp.vendor.secretKeyRef: rewrites an okdp.vendor.render stream, for upstream
+charts that hard-wire a secretKeyRef to a Secret they generate themselves
+(lookup + rand*) with no value to point it elsewhere (JupyterHub's proxy
+token): the wrapper feeds the chart a placeholder and re-points the
+references to an ESO-generated Secret. Returns the rendered stream with every container env
+`valueFrom.secretKeyRef` {name: <name>, key: <key>} of the workload pod
+templates (Deployment, StatefulSet, DaemonSet, ReplicaSet, Job, CronJob;
+containers and initContainers) re-pointed to Secret <to> (key <toKey>,
+default <key>). Documents without such a reference are passed through
+untouched; the others are re-serialised (same content, keys sorted, comments
+dropped). Fails when nothing was re-pointed: the upstream chart changed.
+
+  {{- $out := include "okdp.vendor.render" (dict "ctx" $ "chart" "x" "values" $v) }}
+  {{ include "okdp.vendor.secretKeyRef" (dict "rendered" $out "name" "x-hub" "key" "token" "to" "x-generated") }}
+*/}}
+{{- define "okdp.vendor.secretKeyRef" -}}
+{{- $from := required "okdp.vendor.secretKeyRef: name is required" .name -}}
+{{- $key := required "okdp.vendor.secretKeyRef: key is required" .key -}}
+{{- $to := required "okdp.vendor.secretKeyRef: to is required" .to -}}
+{{- $toKey := .toKey | default $key -}}
+{{- $count := 0 -}}
+{{- $out := "" -}}
+{{- range $doc := regexSplit "(?m)^---[ \\t]*$" .rendered -1 -}}
+  {{- $obj := fromYaml $doc -}}
+  {{- $changed := false -}}
+  {{- if and $obj (not (hasKey $obj "Error")) -}}
+    {{- $pod := dict -}}
+    {{- if has (toString $obj.kind) (list "Deployment" "StatefulSet" "DaemonSet" "ReplicaSet" "Job") -}}
+      {{- $pod = ((($obj.spec | default dict).template | default dict).spec) | default dict -}}
+    {{- else if eq (toString $obj.kind) "CronJob" -}}
+      {{- $pod = ((((($obj.spec | default dict).jobTemplate | default dict).spec | default dict).template | default dict).spec) | default dict -}}
+    {{- end -}}
+    {{- range $list := list ($pod.containers | default list) ($pod.initContainers | default list) -}}
+      {{- range $c := $list -}}
+        {{- range $e := $c.env | default list -}}
+          {{- $ref := (($e.valueFrom | default dict).secretKeyRef) | default dict -}}
+          {{- if and (eq (toString $ref.name) $from) (eq (toString $ref.key) $key) -}}
+            {{- $_ := set $ref "name" $to -}}
+            {{- $_ := set $ref "key" $toKey -}}
+            {{- $changed = true -}}
+            {{- $count = add1 $count -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if $changed -}}
+    {{- $out = print $out "\n---\n" (regexFind "# Source: [^\\n]*" $doc) "\n" (toYaml $obj) -}}
+  {{- else if trim $doc -}}
+    {{- $out = print $out "\n---" $doc -}}
+  {{- end -}}
+{{- end -}}
+{{- if eq $count 0 -}}
+  {{- fail (printf "okdp.vendor.secretKeyRef: no secretKeyRef %s/%s in the rendered workloads (did the vendored chart change?)" $from $key) -}}
+{{- end -}}
+{{- $out -}}
+{{- end -}}
+
+{{/*
+okdp.vendor.crds: the CRDs of the chart unpacked under vendor/<chart>/crds/
+(every *.yaml / *.yml file, sub-directories included), as regular objects.
+
+  {{ include "okdp.vendor.crds" (dict "ctx" $ "chart" "spark-operator") }}
+
+Helm installs the crds/ directory of the chart being installed only, never of
+a vendored one, and okdp.vendor.render renders templates/. Each CRD gets
+  helm.sh/resource-policy: keep                               uninstalling the release
+                                                              must not delete the CRDs
+                                                              (and every custom resource)
+  argocd.argoproj.io/sync-options: Delete=false,ServerSideApply=true
+                                                              the same for Argo; large
+                                                              CRDs exceed the client-side
+                                                              apply annotation
+and is upgraded with the chart (unlike crds/). The files are not templates.
+The annotations are inserted as text when the layout allows it (large CRDs
+are not re-serialised), otherwise the document is parsed and re-serialised.
+A chart must not create custom resources of a CRD it installs in the same
+release: split it into layered components.
+*/}}
+{{- define "okdp.vendor.crds" -}}
+{{- $ctx := .ctx -}}
+{{- $name := required "okdp.vendor.crds: chart is required" .chart -}}
+{{- $dir := printf "vendor/%s/crds" $name -}}
+{{- $keep := dict "helm.sh/resource-policy" "keep" "argocd.argoproj.io/sync-options" "Delete=false,ServerSideApply=true" -}}
+{{- $insert := "    helm.sh/resource-policy: keep\n    argocd.argoproj.io/sync-options: Delete=false,ServerSideApply=true\n" -}}
+{{- $count := 0 -}}
+{{- range $path, $_ := $ctx.Files.Glob (printf "%s/**" $dir) -}}
+  {{- if regexMatch "\\.ya?ml$" $path -}}
+  {{- range $doc := regexSplit "(?m)^---[ \\t]*$" ($ctx.Files.Get $path) -1 -}}
+    {{- $clean := regexReplaceAll "(?m)^#.*\\n?" $doc "" | trim -}}
+    {{- if $clean -}}
+      {{- if not (regexMatch "(?m)^kind:[ \\t]*[\"']?CustomResourceDefinition[\"']?[ \\t]*$" $clean) -}}
+        {{- fail (printf "okdp.vendor.crds: %s: not a CustomResourceDefinition" $path) -}}
+      {{- end -}}
+      {{- $count = add1 $count -}}
+      {{- $text := "" -}}
+      {{- if regexMatch "helm\\.sh/resource-policy|argocd\\.argoproj\\.io/sync-options" $clean -}}
+      {{- else if regexMatch "(?m)^metadata:\\n  annotations:\\n" $clean -}}
+        {{- $text = regexReplaceAll "(?m)^metadata:\\n  annotations:\\n" $clean (printf "metadata:\n  annotations:\n%s" $insert) -}}
+      {{- else if and (regexMatch "(?m)^metadata:\\n" $clean) (not (regexMatch "(?m)^  annotations:" $clean)) -}}
+        {{- $text = regexReplaceAll "(?m)^metadata:\\n" $clean (printf "metadata:\n  annotations:\n%s" $insert) -}}
+      {{- end -}}
+      {{- if not $text -}}
+        {{- $obj := fromYaml $clean -}}
+        {{- if hasKey $obj "Error" -}}
+          {{- fail (printf "okdp.vendor.crds: %s: %s" $path $obj.Error) -}}
+        {{- end -}}
+        {{- $meta := $obj.metadata -}}
+        {{- $_ := set $meta "annotations" (merge (deepCopy $keep) ($meta.annotations | default dict)) -}}
+        {{- $text = toYaml $obj -}}
+      {{- end }}
+---
+# Source: {{ $path }}
+{{ $text }}
+    {{- end -}}
+  {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if eq $count 0 -}}
+  {{- fail (printf "okdp.vendor.crds: no CRD under %s (run scripts/vendor-charts.sh %s)" $dir $ctx.Chart.Name) -}}
 {{- end -}}
 {{- end -}}
 

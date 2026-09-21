@@ -1,4 +1,12 @@
 {{- if .Values.test.vendor.enabled }}
 {{- $values := dict "replicaCount" .Values.test.vendor.replicas "image" (dict "tag" "1.0") "hook" (dict "enabled" .Values.test.vendor.hook) "extraEnv" (include "okdp.proxy.env" . | fromYaml) -}}
-{{ include "okdp.vendor.render" (dict "ctx" . "chart" .Values.test.vendor.chart "values" $values) }}
+{{- $out := include "okdp.vendor.render" (dict "ctx" . "chart" .Values.test.vendor.chart "values" $values) -}}
+{{- with .Values.test.vendor.repoint }}
+{{ include "okdp.vendor.secretKeyRef" (dict "rendered" $out "name" (tpl .name $) "key" "token" "to" (printf "%s-generated" $.Release.Name) "toKey" "proxy-token") }}
+{{- else }}
+{{ $out }}
+{{- end }}
+{{- with .Values.test.vendor.crds }}
+{{ include "okdp.vendor.crds" (dict "ctx" $ "chart" .) }}
+{{- end }}
 {{- end }}

@@ -15,3 +15,7 @@ test:
     chart: mini
     replicas: 1
     hook: false
+    # okdp.vendor.secretKeyRef: {name: <Secret name to re-point>}
+    repoint: {}
+    # okdp.vendor.crds: the vendored chart whose crds/ to render
+    crds: ""

@@ -24,6 +24,11 @@ spec:
             - containerPort: {{ . }}
             {{- end }}
           env:
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mini.fullname" . }}-own
+                  key: token
             {{- range $k, $v := .Values.extraEnv }}
             - name: {{ $k }}
               value: {{ $v | quote }}

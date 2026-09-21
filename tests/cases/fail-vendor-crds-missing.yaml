@@ -1,0 +1,3 @@
+# expect: okdp.vendor.crds: no CRD under vendor/none/crds
+test:
+  vendor: {crds: none}

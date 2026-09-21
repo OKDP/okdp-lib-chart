@@ -239,6 +239,77 @@ data:
 
 
 
+
+---
+# Source: okdp-lib-test/templates/vendor.yaml
+# Source: vendor/mini/crds/more/things.yml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false,ServerSideApply=true
+    helm.sh/resource-policy: keep
+    note: 'annotations after labels: parsed and re-serialised'
+  labels:
+    app: mini
+  name: things.mini.example.org
+spec:
+  group: mini.example.org
+  names:
+    kind: Thing
+    plural: things
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        type: object
+    served: true
+    storage: true
+
+---
+# Source: okdp-lib-test/templates/vendor.yaml
+# Source: vendor/mini/crds/widgets.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    helm.sh/resource-policy: keep
+    argocd.argoproj.io/sync-options: Delete=false,ServerSideApply=true
+    controller-gen.kubebuilder.io/version: v0.17.0
+  name: widgets.mini.example.org
+spec:
+  group: mini.example.org
+  names: {kind: Widget, plural: widgets}
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema: {type: object, x-kubernetes-preserve-unknown-fields: true}
+
+---
+# Source: okdp-lib-test/templates/vendor.yaml
+# Source: vendor/mini/crds/widgets.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    helm.sh/resource-policy: keep
+    argocd.argoproj.io/sync-options: Delete=false,ServerSideApply=true
+  name: gadgets.mini.example.org
+spec:
+  group: mini.example.org
+  names: {kind: Gadget, plural: gadgets}
+  scope: Cluster
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema: {type: object}
+
 ---
 # Source: okdp-lib-test/templates/vendor.yaml
 # Source: vendor/mini/templates/rbac.yaml
@@ -256,17 +327,18 @@ rules:
   verbs:
   - get
 
+
 ---
 # Source: okdp-lib-test/templates/vendor.yaml
 # Source: vendor/mini/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: demo-mini
   labels:
-    app.kubernetes.io/name: mini
     app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/name: mini
     app.kubernetes.io/version: "9.9"
+  name: demo-mini
 spec:
   replicas: 3
   selector:
@@ -277,22 +349,25 @@ spec:
       annotations:
         checksum/config: 83640579dd0b27a910758c74d3ebc0a4efcced2076ae21f27d8714c8b7870c57
       labels:
-        app.kubernetes.io/name: mini
         app.kubernetes.io/instance: demo-mini
+        app.kubernetes.io/name: mini
         app.kubernetes.io/version: "9.9"
     spec:
       containers:
-        - name: mini
-          image: "example.org/mini:1.0"
-          ports:
-            - containerPort: 8080
-          env:
-            - name: HTTP_PROXY
-              value: "http://proxy:3128"
-            - name: NO_PROXY
-              value: ".svc,.cluster.local"
-
-
+      - env:
+        - name: TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: proxy-token
+              name: demo-mini-generated
+        - name: HTTP_PROXY
+          value: http://proxy:3128
+        - name: NO_PROXY
+          value: .svc,.cluster.local
+        image: example.org/mini:1.0
+        name: mini
+        ports:
+        - containerPort: 8080
 
 ---
 # Source: okdp-lib-test/templates/descriptor.yaml

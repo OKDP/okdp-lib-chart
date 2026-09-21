@@ -1,0 +1,12 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: things.mini.example.org
+  labels: {app: mini}
+  annotations: {note: "annotations after labels: parsed and re-serialised"}
+spec:
+  group: mini.example.org
+  names: {kind: Thing, plural: things}
+  scope: Namespaced
+  versions:
+    - {name: v1, served: true, storage: true, schema: {openAPIV3Schema: {type: object}}}

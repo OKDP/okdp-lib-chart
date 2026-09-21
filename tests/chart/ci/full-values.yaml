@@ -46,4 +46,4 @@ test:
     - {ref: demo-polaris, contract: iceberg-catalog}
     - {ref: demo-trino, contract: trino}
   provide: {hive: true, trino: true, database: true, s3: true}
-  vendor: {enabled: true, replicas: 3, hook: true}
+  vendor: {enabled: true, replicas: 3, hook: true, repoint: {name: "{{ .Release.Name }}-own"}, crds: mini}
