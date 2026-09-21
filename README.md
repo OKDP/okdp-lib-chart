@@ -111,7 +111,9 @@ Resolution of `ref`:
 2. Otherwise an internal OKDP instance: `ref` is a release name in the same
    namespace. The fields come from the contract's naming convention
    (`x-okdp-internal` in its schema, placeholders `${ref}`, `${namespace}`,
-   `${suffix}`), `secretRef.name` is `<ref>-<contract>-credentials`.
+   `${suffix}`); for contracts with secret fields only, `secretRef.name` is
+   `<ref>-<contract>-credentials` (today none: `hive`, `iceberg-catalog` and
+   `trino` have no secret field, so internal references carry no `secretRef`).
    `s3` and `database-server` have no convention: reference them through a
    connection file.
 
@@ -152,10 +154,14 @@ Open {{ include "okdp.url" . }}.
 
 `okdp.contract.provide` (and the shortcuts `okdp.contract.<contract>.provide`)
 takes `ctx`, `values` (non-secret fields), optional `name` (default: the
-release name), `secretRef` (default `<name>-<contract>-credentials`) and
-`secret`: `{stringData: {...}}` for a plain Secret, or
-`{generate: [<okdp.generatedSecret keys>], stringData: {...}}` for generated
-credentials. Leave `secret` out when something else creates that Secret.
+release name), `secretRef` and `secret`: `{stringData: {...}}` for a plain
+Secret, or `{generate: [<okdp.generatedSecret keys>], stringData: {...}}` for
+generated credentials. The output carries a `secretRef` only when one of the
+two is given (`secret` alone names it `<name>-<contract>-credentials`): give
+`secretRef` alone when something else creates the Secret (an upstream chart,
+an operator), neither when consumers bring their own credentials (e.g. an s3
+store whose consumers use their own grants). An output never points at a
+Secret that nobody creates.
 It validates the fields against the contract and, for an output named after
 the release, against the contract's internal convention.
 
@@ -172,12 +178,24 @@ the release, against the contract's internal convention.
 ```
 
 One ESO `Password` generator per key and one `ExternalSecret` writing Secret
-`name`. Key options: `length` (32), `digits` (6), `symbols` (0), `noUpper`
-(false), `transform: sha256` (64 hex characters). `stringData` adds static
-keys; `refreshInterval` defaults to `"0"` (generated once); `apiVersion`
-defaults to `external-secrets.io/v1` (ESO >= 0.17 serves only `v1`; the
-`Password` generators are `generators.external-secrets.io/v1alpha1`).
-Nothing random is ever computed by Helm, so `helm template` is deterministic.
+`name`. Arguments:
+
+| Argument | Default | Meaning |
+|---|---|---|
+| `ctx`, `name` | required | root context; Secret (and ExternalSecret) name |
+| `keys[]` | required | `key` (Secret key), `length` (32), `digits` (6), `symbols` (0), `noUpper` (false), `transform`: `sha256` (hex SHA-256, 64 characters) or `b64enc` (base64 of the password, e.g. an Airflow Fernet key) |
+| `stringData` | none | static keys written alongside, literally (a value containing `{{` is escaped for ESO templating) |
+| `labels` | none | extra labels on every object and on the target Secret |
+| `annotations` | none | added to every object (generators and ExternalSecret), e.g. `helm.sh/resource-policy: keep` + `argocd.argoproj.io/sync-options: Delete=false` for credentials that outlive the release (the target Secret is owned by the ExternalSecret) |
+| `type` | none | target Secret `type` (e.g. `Opaque`) |
+| `namespace` | release namespace | |
+| `refreshInterval` | `"0"` | generated once |
+| `apiVersion` | `external-secrets.io/v1` | ExternalSecret API; ESO >= 0.17 serves only `v1` (the platform runs ESO 2.11). The `Password` generators are `generators.external-secrets.io/v1alpha1` |
+
+Generators are named `<name>-<key>` (lowercased, `_` and `.` as `-`); a name
+longer than 63 characters is cut and suffixed with 8 hex characters of the
+key's SHA-256, so long keys never collide. Nothing random is ever computed by
+Helm, so `helm template` is deterministic.
 
 The generated Secret is **frozen once written** (verified on ESO 0.15.1):
 with `refreshInterval: "0"` ESO never re-reads the ExternalSecret, so a later
@@ -218,9 +236,10 @@ which templates read the same except `hasKey`). The upstream templates
 see the wrapper's `.Release` (names and `app.kubernetes.io/instance` derive from
 `<project>-<instance>`), `.Chart` from the vendored `Chart.yaml`,
 `.Capabilities`, `.Template.BasePath` and `.Files` (literal `.Files.Get "x"`
-paths are redirected to the vendored directory). Partials of the chart and of
-its library subcharts load; `templates/tests/` and `NOTES.txt` are skipped;
-hook annotations are kept. A vendored chart bundling an application subchart
+paths are redirected to the vendored directory). Partials (`templates/_*`) of
+the chart and of its library subcharts load and, as with Helm, what they print
+outside a `define` is discarded; `templates/tests/` and `NOTES.txt` are
+skipped; hook annotations are kept. A vendored chart bundling an application subchart
 is refused: vendor that subchart separately.
 
 Objects and workload pod templates without `app.kubernetes.io/instance` get
@@ -228,6 +247,56 @@ it (the console finds workloads by it); only those documents are
 re-serialised. Pass `"instanceLabel" false` to leave the output untouched.
 Upstream `values.schema.json` files are not enforced (Helm offers no schema
 validation function to templates).
+
+#### `okdp.vendor.crds`
+
+```yaml
+{{ include "okdp.vendor.crds" (dict "ctx" $ "chart" "spark-operator") }}
+```
+
+Helm installs the `crds/` directory of the chart being installed only, never
+of a vendored chart. This renders every `*.yaml`/`*.yml` of
+`vendor/<chart>/crds/` (sub-directories included; files are not templates) as
+regular objects annotated `helm.sh/resource-policy: keep` and
+`argocd.argoproj.io/sync-options: Delete=false,ServerSideApply=true`: kept on
+uninstall, server-side applied by Argo (large CRDs exceed the client-side apply
+annotation), and upgraded with the chart. The annotations are inserted as text
+when the layout allows it (large CRDs are not re-serialised). Fails when a
+document is not a `CustomResourceDefinition` or when there is none. A chart
+never creates custom resources of a CRD it installs in the same release.
+
+#### `okdp.vendor.secretKeyRef`
+
+```yaml
+{{- $out := include "okdp.vendor.render" (dict "ctx" $ "chart" "jupyterhub" "values" $v) }}
+{{ include "okdp.vendor.secretKeyRef" (dict "rendered" $out "name" "<release>-hub" "key" "token" "to" "<release>-generated" "toKey" "token") }}
+```
+
+For an upstream chart that hard-wires a `secretKeyRef` to a Secret it
+generates itself (`lookup` + `rand*`) with no value to point it elsewhere: the
+wrapper feeds the chart a placeholder and re-points every container and
+init-container env `valueFrom.secretKeyRef {name, key}` of the workload pod
+templates (Deployment, StatefulSet, DaemonSet, ReplicaSet, Job, CronJob) to
+Secret `to` (key `toKey`, default `key`). Only the changed documents are
+re-serialised. Fails when nothing was re-pointed (the upstream chart changed).
+
+#### `okdp.vendor.oidcDcr`
+
+```yaml
+{{- if (include "okdp.oidc" . | fromYaml).dcr.enabled }}
+{{ include "okdp.vendor.oidcDcr" (dict "ctx" $ "values" (include "mychart.values.dcr" . | fromYaml)) }}
+{{- end }}
+```
+
+Renders `vendor/oidc-dcr` (the Job registering the OAuth client of
+`clientProvisioning: dcr` and writing it to a Secret) like `okdp.vendor.render`,
+with names of its own: oidc-dcr 0.3.3 names its Job, ConfigMap, RoleBinding and
+headless Service `dcr`/`dcr-headless` whatever the release, so two DCR clients of
+one namespace would replace each other's. They are all named `name` (default
+`<release>-oidc-dcr`; the Service `<name>-headless`), the ServiceAccount and Role
+too, with the references to them. A release with two clients passes a second
+`name`, e.g. `<release>-console-oidc-dcr`. Fails when an expected object is
+missing (the upstream chart changed).
 
 The upstream chart must itself respect the forbidden patterns (no `lookup`,
 no random function, hooks limited to pre/post-install/upgrade): review it when
