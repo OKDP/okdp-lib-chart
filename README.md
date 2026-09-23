@@ -21,7 +21,7 @@ values from a template.
 # Chart.yaml
 dependencies:
   - name: okdp-lib
-    version: 0.1.0
+    version: ">=0.1.0 <1.0.0"
     # TODO(no-kubocd): switch to oci://quay.io/okdp/platform-charts
     repository: file://../../../../okdp-lib
 ```
@@ -30,6 +30,11 @@ During the no-kubocd migration the consumers (platform-packages,
 community-packages, sandbox-dependencies) take the library from a checkout of
 this repository next to theirs (`../okdp-lib`); their CI clones it there with
 the `sibling_repositories` input of `okdp-chart-ci.yml`.
+
+The range, not an exact version: Helm checks the constraint against the
+`file://` chart too, so an exact pin breaks `helm dependency build` of every
+consumer as soon as release-please bumps okdp-lib. A breaking okdp-lib release
+(1.0.0) needs the consumers' range raised on purpose.
 
 `helm dependency build` before `helm template`/`helm lint`.
 
