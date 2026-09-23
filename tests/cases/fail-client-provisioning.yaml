@@ -1,4 +1,4 @@
-# expect: global.okdp.oidc.clientProvisioning "manual" is not one of existing, dcr, kubauth
+# expect: global.okdp.oidc.clientProvisioning "manual" is not one of existing, dcr
 global:
   okdp:
     oidc: {clientProvisioning: manual}

@@ -70,7 +70,7 @@ Helpers returning structured data return YAML: pipe them to `fromYaml`.
 | title `"Group \| Label \| widget \| order:1 columns:2 advanced:true condition:a=b"` | `title`, `x-ui-group`, `x-ui-widget`, `x-ui-order`, `x-ui-columns`, `x-ui-advanced`, `x-ui-condition: {field: a, value: b}` |
 | `required: true` on a property | parent `required: [...]` |
 | module `values:` template | a define returning YAML, passed to `okdp.vendor.render` |
-| module `enabled: "{{ expr }}"` | `{{ if expr }}` around the `okdp.vendor.render` include; for OIDC modes use `okdp.oidc` (`.dcr.enabled`, `.kubauth.enabled`) |
+| module `enabled: "{{ expr }}"` | `{{ if expr }}` around the `okdp.vendor.render` include; for OIDC modes use `okdp.oidc` (`.dcr.enabled`, `.existing`) |
 | module `dependsOn` | nothing: resources must converge in any order |
 | `outputs` | `okdp.instance.outputs` + `okdp.contract.<c>.provide` |
 | `usage` | `okdp.instance.usage` |
@@ -85,7 +85,7 @@ Helpers returning structured data return YAML: pipe them to `fromYaml`.
 |---|---|
 | `okdp.require (dict "ctx" $ "keys" (list "ingress.suffix" ...))` | nothing; fails with "global.okdp.X is required ... platform/platform-values.yaml" |
 | `okdp.platform.get (dict "ctx" $ "path" "a.b")` | YAML `{v: <value or null>}` |
-| `okdp.oidc $` | YAML: `global.okdp.oidc` with defaults (`enabled: true`, `scope: "openid profile email groups"`, `clientProvisioning: existing`) and computed booleans `dcr.enabled`, `kubauth.enabled`, `existing` |
+| `okdp.oidc $` | YAML: `global.okdp.oidc` with defaults (`enabled: true`, `scope: "openid profile email groups"`, `clientProvisioning: existing`) and computed booleans `dcr.enabled`, `existing` |
 | `okdp.proxy.env $` | YAML map `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY` (empty ones left out) |
 | `okdp.proxy.envList $` | the same as a Kubernetes `env` list |
 

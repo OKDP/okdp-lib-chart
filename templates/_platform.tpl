@@ -51,9 +51,8 @@ okdp.oidc: global.okdp.oidc with defaults applied and the booleans the former
 KuboCD `enabled:` expressions computed, as YAML (use fromYaml):
   enabled             default true
   scope               default "openid profile email groups"
-  clientProvisioning  default "existing" (existing | dcr | kubauth)
+  clientProvisioning  default "existing" (existing | dcr)
   dcr.enabled         clientProvisioning == "dcr"
-  kubauth.enabled     clientProvisioning == "kubauth"
   existing            clientProvisioning == "existing"
   {{- $oidc := include "okdp.oidc" $ | fromYaml }}
 */}}
@@ -64,15 +63,12 @@ KuboCD `enabled:` expressions computed, as YAML (use fromYaml):
 {{- if not $o.scope }}{{ $_ := set $o "scope" "openid profile email groups" }}{{ end -}}
 {{- if not $o.clientProvisioning }}{{ $_ := set $o "clientProvisioning" "existing" }}{{ end -}}
 {{- $mode := $o.clientProvisioning -}}
-{{- if not (has $mode (list "existing" "dcr" "kubauth")) -}}
-  {{- fail (printf "global.okdp.oidc.clientProvisioning %q is not one of existing, dcr, kubauth" $mode) -}}
+{{- if not (has $mode (list "existing" "dcr")) -}}
+  {{- fail (printf "global.okdp.oidc.clientProvisioning %q is not one of existing, dcr" $mode) -}}
 {{- end -}}
 {{- $dcr := deepCopy ($o.dcr | default dict) -}}
 {{- $_ := set $dcr "enabled" (and $o.enabled (eq $mode "dcr")) -}}
 {{- $_ := set $o "dcr" $dcr -}}
-{{- $kubauth := deepCopy ($o.kubauth | default dict) -}}
-{{- $_ := set $kubauth "enabled" (and $o.enabled (eq $mode "kubauth")) -}}
-{{- $_ := set $o "kubauth" $kubauth -}}
 {{- $_ := set $o "existing" (and $o.enabled (eq $mode "existing")) -}}
 {{- toYaml $o -}}
 {{- end -}}

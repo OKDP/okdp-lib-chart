@@ -211,8 +211,6 @@ data:
     existing: false
     issuerUri: https://keycloak.okdp.sandbox/realms/master
     jwksUri: https://keycloak.okdp.sandbox/realms/master/protocol/openid-connect/certs
-    kubauth:
-      enabled: false
     scope: openid profile email groups
     tokenUrl: https://keycloak.okdp.sandbox/realms/master/protocol/openid-connect/token
   proxy-env.yaml: |

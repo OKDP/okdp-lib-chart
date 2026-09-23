@@ -56,8 +56,6 @@ data:
       enabled: false
     enabled: true
     existing: true
-    kubauth:
-      enabled: false
     scope: openid profile email groups
   proxy-env.yaml: |
     {}
