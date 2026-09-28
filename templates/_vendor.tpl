@@ -320,7 +320,9 @@ oidc-dcr 0.3.3 names its Job, ConfigMap, RoleBinding and headless Service
 replacing the first. They are renamed here, with the references to them (the
 Job's ConfigMap volume, the Service selector job-name); the ServiceAccount and
 Role are named through the values (security.service_account, security.role),
-which this helper sets. The renamed documents are re-serialised (same content,
+which this helper sets. The Job image defaults to a pinned Alpine (the chart's
+default is alpine:latest; the script still installs its tools with apk at
+runtime); values.image overrides it. The renamed documents are re-serialised (same content,
 keys sorted, comments dropped). Fails when an expected object is missing: the
 upstream chart changed.
 */}}
@@ -332,6 +334,9 @@ upstream chart changed.
 {{- $_ := set $values "security" (merge (dict "service_account" $name "role" $name) ($values.security | default dict)) -}}
 {{- $_ := set $values.security "service_account" $name -}}
 {{- $_ := set $values.security "role" $name -}}
+{{- if not $values.image -}}
+  {{- $_ := set $values "image" "docker.io/library/alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6" -}}
+{{- end -}}
 {{- $rendered := include "okdp.vendor.render" (dict "ctx" $ctx "chart" "oidc-dcr" "values" $values) -}}
 {{- $renames := dict "ConfigMap/dcr" $name "Job/dcr" $name "RoleBinding/dcr" $name "Service/dcr-headless" $headless -}}
 {{- $seen := dict -}}

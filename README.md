@@ -310,7 +310,10 @@ one namespace would replace each other's. They are all named `name` (default
 `<release>-oidc-dcr`; the Service `<name>-headless`), the ServiceAccount and Role
 too, with the references to them. A release with two clients passes a second
 `name`, e.g. `<release>-console-oidc-dcr`. Fails when an expected object is
-missing (the upstream chart changed).
+missing (the upstream chart changed). The Job image is pinned
+(`alpine:3.24.2` by digest) instead of the chart's `alpine:latest`, unless the
+values set `image`; the upstream script still installs curl, jq and kubectl
+with `apk` when it starts.
 
 The upstream chart must itself respect the forbidden patterns (no `lookup`,
 no random function, hooks limited to pre/post-install/upgrade): review it when
