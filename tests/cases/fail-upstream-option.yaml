@@ -1,0 +1,6 @@
+# expect: unknown upstream option "allow"
+test:
+  vendor:
+    upstream: {allow: [x]}
+upstream:
+  mini: {replicaCount: 2}

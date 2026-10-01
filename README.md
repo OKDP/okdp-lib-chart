@@ -264,6 +264,48 @@ re-serialised. Pass `"instanceLabel" false` to leave the output untouched.
 Upstream `values.schema.json` files are not enforced (Helm offers no schema
 validation function to templates).
 
+#### Instance-level upstream values (`upstream` option)
+
+The chart parameters only reach the upstream chart through the values the
+wrapper computes. To let an instance set any other value of a vendored chart,
+the wrapper passes `upstream` to `okdp.vendor.render`:
+
+```yaml
+{{ include "okdp.vendor.render" (dict "ctx" $ "chart" "trino" "values" $v
+     "upstream" (dict "protect" (list "fullnameOverride" "server.config")
+                      "append" (list "env"))) }}
+```
+
+The instance then writes, in its `values.yaml`:
+
+```yaml
+upstream:
+  trino:                      # the vendor/ directory name (option `key` to change it)
+    image: {repository: mirror.example.org/trinodb/trino}
+    worker: {tolerations: [{key: dedicated, operator: Exists}]}
+    env: [{name: EXTRA, value: "1"}]
+```
+
+`.Values.upstream.<chart>` is merged over the computed values, so the instance
+wins (maps merge, lists and scalars replace, a null clears the key), except:
+
+| Option | Meaning |
+|---|---|
+| `protect` | dotted paths the instance must not set: setting the path, anything under it, or a non-map on the way to it fails the render. `global` is always protected. List what the platform relies on: names, authentication, TLS, the wrapper's Secrets. |
+| `append` | dotted paths of lists: the instance's list is appended to the computed one instead of replacing it (an `env` list carrying the wrapper's secret references). |
+| `key` | the key under `.Values.upstream`, default the chart. |
+
+A key or value containing `{{` is refused: upstream charts pass some values
+to `tpl` (Trino's catalogs, labels, annotations), and template code there could
+call `lookup` under Flux and read any Secret of the cluster. The chart schema
+should refuse it too, so that the console rejects it before committing (see
+`upstream` in `platform-packages/packages/services/trino/values.schema.json`).
+
+Without the `upstream` option, `.Values.upstream` is never read for that
+chart. The chart's `values.schema.json` declares what an instance may set
+(property `upstream`, one object per opted-in chart): the root
+`additionalProperties: false` refuses it otherwise.
+
 #### `okdp.vendor.crds`
 
 ```yaml

@@ -1,0 +1,8 @@
+# expect: upstream.mini must be a map
+test:
+  vendor:
+    upstream:
+      protect: [image.tag, hook]
+      append: [ports]
+upstream:
+  mini: [1]

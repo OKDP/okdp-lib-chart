@@ -1,0 +1,18 @@
+# okdp.vendor.render with instance-level upstream values (okdp.vendor.upstream).
+global:
+  okdp:
+    ingress: {suffix: okdp.sandbox, className: nginx}
+    certificateIssuers: {selfSigned: {name: issuer}}
+test:
+  vendor:
+    enabled: true
+    upstream:
+      protect: [image.tag, hook]
+      append: [ports]
+upstream:
+  mini:
+    replicaCount: 5                           # overrides the computed value (1)
+    image: {repository: mirror.example.org/mini}   # merges with the computed tag
+    rbac: false                               # false overrides the upstream default
+    ports: [9090]                             # appended to the upstream default [8080]
+    extraEnv: {EXTRA: "yes"}

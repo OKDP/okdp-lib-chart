@@ -39,6 +39,10 @@ chart that bundles an application subchart is refused: vendor and render that
 subchart on its own. Hooks keep their annotations, so they behave as in the
 upstream chart. Objects and pod templates missing the label
 app.kubernetes.io/instance get it (pass "instanceLabel" false to opt out).
+
+  upstream  optional, opts the chart into instance-level upstream values:
+            .Values.upstream.<chart> is merged over the computed values
+            (see okdp.vendor.upstream). Without it they are never read.
 */}}
 {{- define "okdp.vendor.render" -}}
 {{- $ctx := .ctx -}}
@@ -54,6 +58,9 @@ app.kubernetes.io/instance get it (pass "instanceLabel" false to opt out).
   {{- fail (printf "%s: %s/values.yaml: %s" $ctx.Chart.Name $dir $defaults.Error) -}}
 {{- end -}}
 {{- $values := mergeOverwrite (deepCopy $defaults) (deepCopy (.values | default dict)) -}}
+{{- if hasKey . "upstream" -}}
+  {{- include "okdp.vendor.upstream" (dict "ctx" $ctx "chart" $name "values" $values "options" .upstream) -}}
+{{- end -}}
 {{- $global := mergeOverwrite (deepCopy ($defaults.global | default dict)) (deepCopy ($ctx.Values.global | default dict)) ((.values | default dict).global | default dict) -}}
 {{- $_ := set $values "global" $global -}}
 {{- $chart := dict
@@ -128,6 +135,112 @@ without a `define` are also registered under their path, for
 {{- $rendered -}}
 {{- else -}}
 {{- include "okdp.vendor.instanceLabel" (dict "rendered" $rendered "release" $ctx.Release.Name) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+okdp.vendor.upstream: internal to okdp.vendor.render. Merges the instance's
+values of a vendored chart, .Values.upstream.<key>, over its computed values
+(`values`, changed in place). The instance wins, so it can set any value of
+the upstream chart, except where the wrapper protects it.
+
+  {{ include "okdp.vendor.render" (dict "ctx" $ "chart" "trino" "values" $v
+       "upstream" (dict "protect" (list "fullnameOverride" "server.config")
+                        "append" (list "env"))) }}
+
+Options (the `upstream` argument of okdp.vendor.render, a dict, may be empty):
+  key      the key under .Values.upstream; default: the chart.
+  protect  dotted paths the instance must not set: setting the path, anything
+           under it, or a non-map on the way to it fails the render.
+           `global` (the platform values) is always protected.
+  append   dotted paths of lists: the instance's list is appended to the
+           computed one instead of replacing it (e.g. an env list carrying the
+           wrapper's secrets). A path cannot be both protected and appended.
+Otherwise as for `values`: maps merge, lists and scalars replace, a null
+clears the key. A key or value containing "{{" is refused: upstream charts
+pass some values to tpl (Trino's catalogs, labels), where template code could
+call lookup under Flux and read any Secret of the cluster. Path segments are map keys split on "." (no list index, no
+key containing a dot). What an instance may set is declared by the chart's
+values.schema.json (property `upstream`); this helper enforces what it may not.
+*/}}
+{{- define "okdp.vendor.upstream" -}}
+{{- $ctx := .ctx -}}
+{{- $opts := .options | default dict -}}
+{{- if not (kindIs "map" $opts) -}}
+  {{- fail (printf "%s: okdp.vendor.render %s: upstream must be a dict" $ctx.Chart.Name .chart) -}}
+{{- end -}}
+{{- range $k, $_ := $opts -}}
+  {{- if not (has $k (list "key" "protect" "append")) -}}
+    {{- fail (printf "%s: okdp.vendor.render: unknown upstream option %q (key, protect, append)" $ctx.Chart.Name $k) -}}
+  {{- end -}}
+{{- end -}}
+{{- $key := $opts.key | default .chart -}}
+{{- $appends := $opts.append | default list -}}
+{{- $all := $ctx.Values.upstream | default dict -}}
+{{- if not (kindIs "map" $all) -}}
+  {{- fail (printf "%s: upstream must be a map of vendored chart names to values" $ctx.Chart.Name) -}}
+{{- end -}}
+{{- $where := printf "%s: upstream.%s" $ctx.Chart.Name $key -}}
+{{- $user := index $all $key -}}
+{{- if and $user (not (kindIs "map" $user)) -}}
+  {{- fail (printf "%s must be a map of values of the vendored chart" $where) -}}
+{{- end -}}
+{{- if $user -}}
+{{- if contains "{{" (toJson $user) -}}
+  {{- fail (printf "%s: a key or value contains \"{{\": upstream charts pass some values to tpl, so an instance may not write template code" $where) -}}
+{{- end -}}
+{{- $user = deepCopy $user -}}
+{{- range $p := concat (list "global") ($opts.protect | default list) -}}
+  {{- if has $p $appends -}}
+    {{- fail (printf "%s: okdp.vendor.render: %s is both protected and appended" $ctx.Chart.Name $p) -}}
+  {{- end -}}
+  {{- $parts := splitList "." $p -}}
+  {{- $node := $user -}}
+  {{- $done := false -}}
+  {{- range $i, $part := $parts -}}
+    {{- if and (not $done) (hasKey $node $part) -}}
+      {{- $v := index $node $part -}}
+      {{- if or (eq (add1 $i) (len $parts)) (not (kindIs "map" $v)) -}}
+        {{- fail (printf "%s.%s: %s is set by the platform and cannot be changed" $where (join "." (slice $parts 0 (add1 $i))) $p) -}}
+      {{- end -}}
+      {{- $node = $v -}}
+    {{- else -}}
+      {{- $done = true -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- range $p := $appends -}}
+  {{- $parts := splitList "." $p -}}
+  {{- $last := last $parts -}}
+  {{- $unode := $user -}}
+  {{- $vnode := $.values -}}
+  {{- $found := true -}}
+  {{- range $part := initial $parts -}}
+    {{- if and $found (kindIs "map" (index $unode $part)) -}}
+      {{- $unode = index $unode $part -}}
+      {{- if kindIs "map" $vnode }}{{ $vnode = index $vnode $part }}{{ end -}}
+    {{- else -}}
+      {{- $found = false -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if and $found (hasKey $unode $last) -}}
+    {{- $add := index $unode $last -}}
+    {{- if not (kindIs "slice" $add) -}}
+      {{- fail (printf "%s.%s must be a list: it is appended to the one the platform sets" $where $p) -}}
+    {{- end -}}
+    {{- $base := list -}}
+    {{- if and (kindIs "map" $vnode) (hasKey $vnode $last) -}}
+      {{- $computed := index $vnode $last -}}
+      {{- if kindIs "slice" $computed -}}
+        {{- $base = $computed -}}
+      {{- else if not (kindIs "invalid" $computed) -}}
+        {{- fail (printf "%s.%s: the computed value is not a list (did the vendored chart change?)" $where $p) -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $_ := set $unode $last (concat $base $add) -}}
+  {{- end -}}
+{{- end -}}
+{{- $_ := mergeOverwrite .values $user -}}
 {{- end -}}
 {{- end -}}
 

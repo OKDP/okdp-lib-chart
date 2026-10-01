@@ -1,0 +1,9 @@
+# expect: upstream.mini.ports must be a list
+test:
+  vendor:
+    upstream:
+      protect: [image.tag, hook]
+      append: [ports]
+upstream:
+  mini:
+    ports: 9090

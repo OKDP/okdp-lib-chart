@@ -1,0 +1,9 @@
+# expect: upstream.mini.image.tag: image.tag is set by the platform
+test:
+  vendor:
+    upstream:
+      protect: [image.tag, hook]
+      append: [ports]
+upstream:
+  mini:
+    image: {tag: "2.0"}

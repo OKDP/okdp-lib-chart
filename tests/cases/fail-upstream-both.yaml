@@ -1,0 +1,6 @@
+# expect: ports is both protected and appended
+test:
+  vendor:
+    upstream: {protect: [ports], append: [ports]}
+upstream:
+  mini: {replicaCount: 2}

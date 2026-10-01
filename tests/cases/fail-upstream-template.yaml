@@ -1,0 +1,7 @@
+# expect: upstream.mini: a key or value contains "{{"
+test:
+  vendor:
+    upstream: {key: mini}
+upstream:
+  mini:
+    extraEnv: {LEAK: '{{ (lookup "v1" "Secret" "kube-system" "x").data }}'}

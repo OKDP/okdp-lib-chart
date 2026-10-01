@@ -19,3 +19,5 @@ test:
     repoint: {}
     # okdp.vendor.crds: the vendored chart whose crds/ to render
     crds: ""
+    # okdp.vendor.render upstream option: {protect: [...], append: [...], key: ...}
+    upstream: {}
