@@ -45,7 +45,7 @@ Chart.yaml            version <upstream>-<okdp semver>, appVersion <upstream>
 values.yaml           global/connections placeholders + the former KuboCD parameters
 values.schema.json    draft-07, x-ui-* hints, x-okdp-connection-ref on connection refs
 vendor.yaml           upstream charts rendered with computed values (see okdp.vendor.render)
-vendor/<name>/        their pristine unpacked copy (scripts/vendor-charts.sh)
+vendor/<name>/        their pristine unpacked copy (scripts/vendor-charts.sh, not committed)
 templates/
   _instance.tpl       okdp.instance.url / usage / outputs overrides
   _values.tpl         one define per upstream chart: its values, computed (the former module `values:`)
@@ -230,12 +230,14 @@ charts:
 optional `drop` (paths relative to the vendored chart root removed after
 unpacking, e.g. `charts/postgresql` for a bundled subchart the wrapper
 disables, or `templates/secret.yaml`; no `..`, each must exist). Any other key
-fails. `scripts/vendor-charts.sh` of `OKDP/platform-packages` is canonical: the copies in
+fails. `vendor.yaml` is the lock: `vendor/` is not committed, the chart CI
+downloads it before testing and packaging, so the published chart carries it.
+`scripts/vendor-charts.sh` of `OKDP/platform-packages` is canonical: the copies in
 other repositories stay identical to it.
 
 ```sh
-scripts/vendor-charts.sh packages/services/trino          # unpack under vendor/trino
-scripts/vendor-charts.sh --check packages/services/trino  # CI: vendor/ matches vendor.yaml
+scripts/vendor-charts.sh packages/services/trino          # download under vendor/trino
+scripts/vendor-charts.sh --check packages/services/trino  # vendor/ matches vendor.yaml
 ```
 
 ```yaml
