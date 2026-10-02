@@ -18,7 +18,7 @@ name: release-please
 # Every push to main is a candidate: release-please keeps one release pull
 # request up to date, and cutting the release is merging that pull request.
 # The tag (vX.Y.Z) is both the chart version and the Go module version of
-# github.com/okdp/okdp-lib/contracts.
+# github.com/okdp/okdp-lib-chart/contracts.
 on:
   push:
     branches:
@@ -58,7 +58,11 @@ jobs:
     with:
       tools_ref: no-kubocd
       publish_to_registry: "true"
-      oci_package_prefix: platform-charts
+      # Published as oci://quay.io/okdp/okdp-lib-chart (no repository prefix).
+      # TODO(no-kubocd): okdp-chart-ci.yml rejects an empty oci_package_prefix
+      # on release; the release fails until gh-workflows accepts it and pushes
+      # to oci://<registry>/<owner>.
+      oci_package_prefix: ""
       on_existing_tag: "fail"
       chart_roots: "."
       package_paths: '["."]'

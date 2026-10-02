@@ -1,4 +1,4 @@
-# okdp-lib
+# okdp-lib-chart
 
 Library chart shared by every OKDP chart. It replaces what KuboCD did around a
 package: the platform Context (`global.okdp`), contracts and connections, the
@@ -6,11 +6,11 @@ package `outputs` and `usage`, generated secrets, and the rendering of module
 values from a template.
 
 - Chart: this repository's root (type `library`), published to
-  `oci://quay.io/okdp/platform-charts/okdp-lib`.
+  `oci://quay.io/okdp/okdp-lib-chart`.
 - Contracts: [`contracts/<contract>.schema.json`](contracts/) (draft-07), the
   canonical definition of `database-server`, `s3`, `hive`, `iceberg-catalog`
   and `trino`. Go code reads them from the module
-  `github.com/okdp/okdp-lib/contracts` (`contracts.FS`).
+  `github.com/okdp/okdp-lib-chart/contracts` (`contracts.FS`).
 - Tests: [`tests/run.sh`](tests/run.sh) (offline, helm only) and `go test ./...`.
 - Releases: release-please tags `vX.Y.Z`, which is both the chart version and
   the Go module version.
@@ -20,20 +20,18 @@ values from a template.
 ```yaml
 # Chart.yaml
 dependencies:
-  - name: okdp-lib
+  - name: okdp-lib-chart
     version: ">=0.1.0 <1.0.0"
-    # TODO(no-kubocd): switch to oci://quay.io/okdp/platform-charts
-    repository: file://../../../../okdp-lib
+    # TODO: switch to oci://quay.io/okdp/okdp-lib-chart once published there
+    repository: https://repo.alliage.io/repository/okdp
 ```
 
-During the no-kubocd migration the consumers (platform-packages,
-community-packages, sandbox-dependencies) take the library from a checkout of
-this repository next to theirs (`../okdp-lib`); their CI clones it there with
-the `sibling_repositories` input of `okdp-chart-ci.yml`.
+During the no-kubocd migration the consumers (platform-charts,
+sandbox-dependencies) take the library from the Helm repository
+`https://repo.alliage.io/repository/okdp`.
 
-The range, not an exact version: Helm checks the constraint against the
-`file://` chart too, so an exact pin breaks `helm dependency build` of every
-consumer as soon as release-please bumps okdp-lib. A breaking okdp-lib release
+The range, not an exact version: an exact pin forces a change in every
+consumer each time release-please bumps okdp-lib-chart. A breaking okdp-lib-chart release
 (1.0.0) needs the consumers' range raised on purpose.
 
 `helm dependency build` before `helm template`/`helm lint`.
@@ -60,7 +58,7 @@ Helpers returning structured data return YAML: pipe them to `fromYaml`.
 
 ## Translating a KuboCD package
 
-| KuboCD | Helm + okdp-lib |
+| KuboCD | Helm + okdp-lib-chart |
 |---|---|
 | `.Context.X` | `.Values.global.okdp.X` (same keys) |
 | `.Parameters.X` | `.Values.X` (same names, top level) |

@@ -18,7 +18,7 @@ name: ci
 
 # The library's own tests (tests/run.sh, go test), then the shared chart CI,
 # which lints the library, renders tests/chart and pushes a CI build to
-# oci://ghcr.io/okdp/okdp-lib/charts.
+# oci://ghcr.io/okdp/okdp-lib-chart/charts.
 on:
   pull_request:
     branches:

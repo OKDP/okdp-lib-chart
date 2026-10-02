@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0.
 
 // Package contracts holds the canonical OKDP contract schemas
-// (<contract>.schema.json, draft-07): the same documents the okdp-lib chart
+// (<contract>.schema.json, draft-07): the same documents the okdp-lib-chart chart
 // embeds (hack/gen-contracts.sh) and validates connections against.
 package contracts
 
