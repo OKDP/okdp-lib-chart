@@ -6,7 +6,7 @@ package `outputs` and `usage`, generated secrets, and the rendering of module
 values from a template.
 
 - Chart: this repository's root (type `library`), published to
-  `oci://quay.io/okdp/okdp-lib-chart`.
+  `oci://quay.io/okdp/charts/okdp-lib-chart`.
 - Contracts: [`contracts/<contract>.schema.json`](contracts/) (draft-07), the
   canonical definition of `database-server`, `s3`, `hive`, `iceberg-catalog`
   and `trino`. Go code reads them from the module
@@ -21,14 +21,9 @@ values from a template.
 # Chart.yaml
 dependencies:
   - name: okdp-lib-chart
-    version: ">=0.1.0 <1.0.0"
-    # TODO: switch to oci://quay.io/okdp/okdp-lib-chart once published there
-    repository: https://repo.alliage.io/repository/okdp
+    version: ">=0.3.0 <1.0.0"
+    repository: oci://quay.io/okdp/charts
 ```
-
-During the no-kubocd migration the consumers (platform-charts,
-sandbox-dependencies) take the library from the Helm repository
-`https://repo.alliage.io/repository/okdp`.
 
 The range, not an exact version: an exact pin forces a change in every
 consumer each time release-please bumps okdp-lib-chart. A breaking okdp-lib-chart release
@@ -437,9 +432,19 @@ too, with the references to them. A release with two clients passes a second
 missing (the upstream chart changed). The Job runs the chart's own image,
 `quay.io/adaltas/oidc-dcr-job` tagged with the chart version: curl, jq and
 kubectl are in the image, the script downloads nothing when it starts, so the
-Job also runs air-gapped (mirror the image like any other). The values'
-`image` (`registry`, `repository`, `tag`, `pull_policy`, `pull_secrets`)
-overrides it.
+Job also runs air-gapped (mirror the image like any other).
+`global.okdp.oidc.dcr.image` (`registry`, `repository`, `tag`, `pull_policy`,
+`pull_secrets`) overrides it for the platform (e.g. a mirror), the values'
+`image` for one chart. The Job also gets an init container,
+`wait-oidc-provider` (same image, volume mounts and security context), that
+waits up to 10 minutes for
+`<global.okdp.oidc.issuerUri>/.well-known/openid-configuration` to answer with
+JSON: the upstream script does not check the HTTP status of its request, so
+while the provider starts it would read an error page (the ingress's 503) as a
+response and fail. The Job's `backoffLimit` is also raised from the upstream 1
+to 6 (retries over about 10 minutes): a provider that answers can still refuse
+the registration until its configuration is applied (Keycloak returns
+`insufficient_scope` until its anonymous registration policies exist).
 
 The upstream chart must itself respect the forbidden patterns (no `lookup`,
 no random function, hooks limited to pre/post-install/upgrade): review it when

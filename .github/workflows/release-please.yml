@@ -60,11 +60,8 @@ jobs:
     with:
       tools_ref: main
       publish_to_registry: "true"
-      # Published as oci://quay.io/okdp/okdp-lib-chart (no repository prefix).
-      # TODO(no-kubocd): okdp-chart-ci.yml rejects an empty oci_package_prefix
-      # on release; the release fails until gh-workflows accepts it and pushes
-      # to oci://<registry>/<owner>.
-      oci_package_prefix: ""
+      # Published as oci://quay.io/okdp/charts/okdp-lib-chart.
+      oci_package_prefix: charts
       on_existing_tag: "fail"
       chart_roots: "."
       package_paths: '["."]'

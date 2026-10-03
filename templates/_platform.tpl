@@ -53,6 +53,9 @@ KuboCD `enabled:` expressions computed, as YAML (use fromYaml):
   scope               default "openid profile email groups"
   clientProvisioning  default "existing" (existing | dcr)
   dcr.enabled         clientProvisioning == "dcr"
+  dcr.image           image of the oidc-dcr Jobs, a map merged under the values' image
+                      (registry, repository, tag, pull_policy, pull_secrets; default the
+                      chart's quay.io/adaltas/oidc-dcr-job:<chart version>)
   existing            clientProvisioning == "existing"
   {{- $oidc := include "okdp.oidc" $ | fromYaml }}
 */}}

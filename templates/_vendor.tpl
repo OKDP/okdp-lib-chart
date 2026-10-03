@@ -502,10 +502,20 @@ Role are named through the values (security.service_account, security.role),
 which this helper sets. The Job image is the chart's own,
 quay.io/adaltas/oidc-dcr-job tagged with the chart version: it embeds the
 tools of the script, which downloads nothing when it starts (air-gapped
-installs mirror it like any other image); values.image (registry, repository,
-tag, pull_policy, pull_secrets) overrides it. The renamed documents are
-re-serialised (same content, keys sorted, comments dropped). Fails when an
-expected object is missing: the upstream chart changed.
+installs mirror it like any other image). global.okdp.oidc.dcr.image
+(registry, repository, tag, pull_policy, pull_secrets) overrides it for the
+platform, values.image for one chart. The Job gets an init container,
+wait-oidc-provider (same image, volume mounts and security context), that waits
+up to 10 minutes for <global.okdp.oidc.issuerUri>/.well-known/openid-configuration
+to answer with JSON: the upstream script does not check the HTTP status of its
+request, so while the provider starts it reads an error page (e.g. the
+ingress's 503) as a response and fails on it. backoffLimit is raised from the
+upstream 1 to 6 (retries over about 10 minutes): a provider that answers can
+still refuse the registration until its configuration is applied (Keycloak:
+insufficient_scope until its anonymous registration policies exist). The
+renamed documents are re-serialised (same content, keys sorted, comments
+dropped). Fails when an expected object is missing: the upstream
+chart changed.
 */}}
 {{- define "okdp.vendor.oidcDcr" -}}
 {{- $ctx := .ctx -}}
@@ -515,6 +525,12 @@ expected object is missing: the upstream chart changed.
 {{- $_ := set $values "security" (merge (dict "service_account" $name "role" $name) ($values.security | default dict)) -}}
 {{- $_ := set $values.security "service_account" $name -}}
 {{- $_ := set $values.security "role" $name -}}
+{{- with (include "okdp.oidc" $ctx | fromYaml).dcr.image -}}
+  {{- if not (kindIs "map" .) -}}
+    {{- fail "global.okdp.oidc.dcr.image must be a map (registry, repository, tag, pull_policy, pull_secrets), as the image of oidc-dcr >= 0.4.0" -}}
+  {{- end -}}
+  {{- $_ := set $values "image" (merge ($values.image | default dict) (deepCopy .)) -}}
+{{- end -}}
 {{- $rendered := include "okdp.vendor.render" (dict "ctx" $ctx "chart" "oidc-dcr" "values" $values "valuesName" (printf "%s-values" $name)) -}}
 {{- $renames := dict "ConfigMap/dcr" $name "Job/dcr" $name "RoleBinding/dcr" $name "Service/dcr-headless" $headless -}}
 {{- $seen := dict -}}
@@ -532,6 +548,19 @@ expected object is missing: the upstream chart changed.
       {{- range $v := $obj.spec.template.spec.volumes | default list -}}
         {{- if and $v.configMap (eq (toString $v.configMap.name) "dcr") }}{{ $_ := set $v.configMap "name" $name }}{{ end -}}
       {{- end -}}
+      {{- $_ := set $obj.spec "backoffLimit" 6 -}}
+      {{- $issuer := (include "okdp.oidc" $ctx | fromYaml).issuerUri -}}
+      {{- if $issuer -}}
+        {{- $pod := $obj.spec.template.spec -}}
+        {{- $main := first $pod.containers -}}
+        {{- $curl := "" -}}
+        {{- range $e := $main.env | default list }}{{ if eq (toString $e.name) "CURL_OPTION" }}{{ $curl = toString $e.value }}{{ end }}{{ end -}}
+        {{- $wait := dict "name" "wait-oidc-provider" "image" $main.image "command" (list "/bin/sh" "-c" (include "okdp.vendor.oidcDcr.wait" $ctx)) "env" (list (dict "name" "OIDC_DISCOVERY_URL" "value" (printf "%s/.well-known/openid-configuration" (trimSuffix "/" (toString $issuer)))) (dict "name" "CURL_OPTION" "value" $curl)) -}}
+        {{- range $k := list "volumeMounts" "securityContext" "imagePullPolicy" "resources" -}}
+          {{- if hasKey $main $k }}{{ $_ := set $wait $k (index $main $k) }}{{ end -}}
+        {{- end -}}
+        {{- $_ := set $pod "initContainers" (append ($pod.initContainers | default list) $wait) -}}
+      {{- end -}}
     {{- else if eq $obj.kind "Service" -}}
       {{- $_ := set $obj.spec "selector" (dict "job-name" $name) -}}
     {{- end -}}
@@ -546,6 +575,19 @@ expected object is missing: the upstream chart changed.
   {{- end -}}
 {{- end -}}
 {{- $out -}}
+{{- end -}}
+
+{{/* okdp.vendor.oidcDcr.wait: internal. Script of the wait-oidc-provider init container. */}}
+{{- define "okdp.vendor.oidcDcr.wait" -}}
+if [ -f /usr/local/share/ca-certificates/ca.crt ]; then CURL_OPTION="$CURL_OPTION --cacert /usr/local/share/ca-certificates/ca.crt"; fi
+i=0
+until curl $CURL_OPTION -f "$OIDC_DISCOVERY_URL" | jq -e .issuer >/dev/null 2>&1; do
+  i=$((i + 1))
+  if [ "$i" -ge 120 ]; then echo "ERROR: $OIDC_DISCOVERY_URL did not answer in 10 minutes"; exit 1; fi
+  echo "INFO: waiting for the OIDC provider ($OIDC_DISCOVERY_URL)"
+  sleep 5
+done
+echo "INFO: OIDC provider ready"
 {{- end -}}
 
 {{/* okdp.vendor.files: internal. Points literal .Files paths at the vendored directory. */}}
