@@ -1,6 +1,8 @@
 # Inputs of the test templates. The ci/*-values.yaml files set them.
 test:
   ui: false
+  # okdp.oidc.dcr arguments (ctx aside), one rendering of okdp.oidc.dcrValues each (dcr mode)
+  oidcDcr: []
   refs: []
   generated: false
   generatedTransform: ""

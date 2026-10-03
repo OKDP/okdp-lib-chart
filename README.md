@@ -48,6 +48,7 @@ templates/
   _instance.tpl       okdp.instance.url / usage / outputs overrides
   _values.tpl         one define per upstream chart: its values, computed (the former module `values:`)
   <name>.yaml         {{ include "okdp.vendor.render" (dict "ctx" $ "chart" "<name>" "values" ...) }}
+  oidc-dcr.yaml       {{ include "okdp.oidc.dcr" ... }}, under the dcr.enabled guard
   descriptor.yaml     {{ include "okdp.descriptor" . }}
 ci/*-values.yaml      include a global.okdp block: platform values are not in values.yaml
 ```
@@ -86,6 +87,32 @@ Helpers returning structured data return YAML: pipe them to `fromYaml`.
 | `okdp.oidc $` | YAML: `global.okdp.oidc` with defaults (`enabled: true`, `scope: "openid profile email groups"`, `clientProvisioning: existing`) and computed booleans `dcr.enabled`, `existing` |
 | `okdp.proxy.env $` | YAML map `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY` (empty ones left out) |
 | `okdp.proxy.envList $` | the same as a Kubernetes `env` list |
+
+### OAuth client: `okdp.oidc.clientSecret`, `okdp.oidc.dcr`
+
+| Helper | Returns |
+|---|---|
+| `okdp.oidc.clientSecret $` | the Secret holding the service's OAuth client (`client_id`, `client_secret`): `creds-<release>-oauth2` in existing mode (created beforehand), `<release>-<namespace>-dcr` in dcr mode (written by the oidc-dcr Job) |
+| `okdp.oidc.dcr (dict "ctx" $ ...)` | in dcr mode, the oidc-dcr Job that registers the client (`okdp.vendor.oidcDcr`); nothing in existing mode |
+
+```yaml
+{{- /* templates/oidc-dcr.yaml */}}
+{{- if (include "okdp.oidc" . | fromYaml).dcr.enabled }}
+{{ include "okdp.oidc.dcr" (dict "ctx" .
+     "redirectUris" (list (printf "https://%s/oauth2/callback" (include "okdp.ingressHost" .)))
+     "grantTypes" (list "authorization_code" "refresh_token")) }}
+{{- end }}
+```
+
+The guard keeps the arguments from being evaluated in existing mode.
+Arguments: `grantTypes` (required); `redirectUris`; `scope` (default
+`global.okdp.oidc.scope`; `openid` is dropped, Keycloak refuses it as a client
+scope); `clientName` (default `<release>-<namespace>`); `secret` (default
+`<release>-<namespace>-dcr`); `public` (a public client, only `client_id`
+written); `request` (merged over the registration request, e.g. `logo_uri`);
+`caSecret` (default `certs-bundle`); `name` (the Job's objects, for a second
+client of the release). Registration is anonymous: the render fails unless
+`global.okdp.oidc.dcr.authMethod` is `anonymous` and `registrationUrl` is set.
 
 ### Names and labels
 
@@ -372,6 +399,9 @@ Secret `to` (key `toKey`, default `key`). Only the changed documents are
 re-serialised. Fails when nothing was re-pointed (the upstream chart changed).
 
 #### `okdp.vendor.oidcDcr`
+
+Charts call it through `okdp.oidc.dcr`, which builds these values; call it
+directly only for a client `okdp.oidc.dcr` cannot describe.
 
 ```yaml
 {{- if (include "okdp.oidc" . | fromYaml).dcr.enabled }}

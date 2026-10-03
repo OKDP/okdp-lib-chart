@@ -1,0 +1,4 @@
+# expect: okdp.oidc.dcr: grantTypes is required
+test:
+  oidcDcr:
+    - redirectUris: ["https://mini-demo.okdp.sandbox/callback"]

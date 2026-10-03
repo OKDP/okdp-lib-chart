@@ -35,6 +35,16 @@ connections:
     contract: hive
     thriftUri: thrift://hms.example.org:9083
 test:
+  oidcDcr:
+    - grantTypes: [authorization_code, refresh_token]
+      redirectUris: ["https://mini-demo.okdp.sandbox/callback"]
+    - grantTypes: [authorization_code]
+      public: true
+      clientName: demo-mini-console
+      secret: demo-mini-console-dcr
+      scope: "openid profile roles"
+      caSecret: my-ca
+      request: {logo_uri: "https://example.org/logo.svg"}
   ui: true
   generated: true
   refs:

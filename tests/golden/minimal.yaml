@@ -24,6 +24,24 @@ data:
     []
 
 ---
+# Source: okdp-lib-test/templates/oidc.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini-oidc
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+data:
+  clientSecret: "creds-demo-mini-oauth2"
+
+---
 # Source: okdp-lib-test/templates/platform.yaml
 apiVersion: v1
 kind: ConfigMap

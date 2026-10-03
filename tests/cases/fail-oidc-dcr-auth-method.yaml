@@ -1,0 +1,5 @@
+# expect: global.okdp.oidc.dcr.authMethod "basic" is not supported: this chart registers anonymously
+global:
+  okdp:
+    oidc:
+      dcr: {authMethod: basic}

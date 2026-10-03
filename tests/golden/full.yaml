@@ -367,6 +367,64 @@ data:
     ttl_seconds: 0
 
 ---
+# Source: okdp-lib-test/templates/oidc.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini-oidc
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+data:
+  clientSecret: "demo-mini-demo-dcr"
+  dcr-00.yaml: |
+    mapping:
+      key_mapping:
+        client_id: .client_id
+        client_secret: .client_secret
+      use_default: false
+    registration_url: https://keycloak.okdp.sandbox/realms/master/clients-registrations/openid-connect
+    request:
+      application_type: web
+      client_name: demo-mini-demo
+      grant_types:
+      - authorization_code
+      - refresh_token
+      redirect_uris:
+      - https://mini-demo.okdp.sandbox/callback
+      scope: profile email groups
+    secret: demo-mini-demo-dcr
+    tls:
+      certificate: certs-bundle
+      insecure: false
+    ttl_seconds: 30
+  dcr-01.yaml: |
+    mapping:
+      key_mapping:
+        client_id: .client_id
+      use_default: false
+    registration_url: https://keycloak.okdp.sandbox/realms/master/clients-registrations/openid-connect
+    request:
+      application_type: web
+      client_name: demo-mini-console
+      grant_types:
+      - authorization_code
+      logo_uri: https://example.org/logo.svg
+      scope: profile roles
+      token_endpoint_auth_method: none
+    secret: demo-mini-console-dcr
+    tls:
+      certificate: my-ca
+      insecure: false
+    ttl_seconds: 30
+
+---
 # Source: okdp-lib-test/templates/platform.yaml
 apiVersion: v1
 kind: ConfigMap

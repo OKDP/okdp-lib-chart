@@ -1,0 +1,15 @@
+{{- /* okdp.oidc.clientSecret, and the oidc-dcr values okdp.oidc.dcr renders for each .Values.test.oidcDcr item (dcr mode only). */ -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "okdp.fullname" (dict "ctx" . "suffix" "oidc") }}
+  labels:
+    {{- include "okdp.labels" . | nindent 4 }}
+data:
+  clientSecret: {{ include "okdp.oidc.clientSecret" . | quote }}
+  {{- if (include "okdp.oidc" . | fromYaml).dcr.enabled }}
+  {{- range $i, $args := .Values.test.oidcDcr }}
+  {{ printf "dcr-%02d.yaml" $i }}: |
+    {{- include "okdp.oidc.dcrValues" (merge (dict "ctx" $) $args) | nindent 4 }}
+  {{- end }}
+  {{- end }}
