@@ -53,14 +53,12 @@ jobs:
     permissions:
       contents: read
       packages: write
-    # TODO(no-kubocd): switch to OKDP/gh-workflows@v1 (and drop tools_repository
-    # and tools_ref) once released. The no-kubocd branch of the shared
-    # workflows only exists on alliage-io/okdp-gh-workflows: a ref missing on
-    # OKDP/gh-workflows makes GitHub reject this whole file.
-    uses: alliage-io/okdp-gh-workflows/.github/workflows/okdp-chart-ci.yml@no-kubocd
+    # TODO(no-kubocd): okdp-chart-ci.yml is not on OKDP/gh-workflows main
+    # yet (it is on its no-kubocd branch): until it is, GitHub rejects this
+    # whole file. Then switch to @v1 (and drop tools_ref) once released.
+    uses: OKDP/gh-workflows/.github/workflows/okdp-chart-ci.yml@main
     with:
-      tools_repository: alliage-io/okdp-gh-workflows
-      tools_ref: no-kubocd
+      tools_ref: main
       publish_to_registry: "true"
       # Published as oci://quay.io/okdp/okdp-lib-chart (no repository prefix).
       # TODO(no-kubocd): okdp-chart-ci.yml rejects an empty oci_package_prefix
