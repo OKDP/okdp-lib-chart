@@ -2,6 +2,7 @@
 {{- $values := dict "replicaCount" .Values.test.vendor.replicas "image" (dict "tag" "1.0") "hook" (dict "enabled" .Values.test.vendor.hook) "extraEnv" (include "okdp.proxy.env" . | fromYaml) -}}
 {{- $args := dict "ctx" . "chart" .Values.test.vendor.chart "values" $values -}}
 {{- with .Values.test.vendor.upstream }}{{ $_ := set $args "upstream" . }}{{ end -}}
+{{- with .Values.test.vendor.valuesFile }}{{ $_ := set $args "valuesFile" . }}{{ end -}}
 {{- if hasKey .Values.test.vendor "valuesConfigMap" }}{{ $_ := set $args "valuesConfigMap" .Values.test.vendor.valuesConfigMap }}{{ end -}}
 {{- $out := include "okdp.vendor.render" $args -}}
 {{- with .Values.test.vendor.repoint }}

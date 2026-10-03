@@ -1,0 +1,6 @@
+# Fixed values of vendor/mini (okdp.vendor.render valuesFile): merged over
+# vendor/mini/values.yaml and under the computed values.
+image:
+  repository: fixed.example.org/mini   # over the vendored default; the computed tag merges in
+replicaCount: 7                        # the computed value (test.vendor.replicas) wins
+rbac: false                            # false over the vendored true

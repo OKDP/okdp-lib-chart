@@ -40,6 +40,11 @@ subchart on its own. Hooks keep their annotations, so they behave as in the
 upstream chart. Objects and pod templates missing the label
 app.kubernetes.io/instance get it (pass "instanceLabel" false to opt out).
 
+  valuesFile
+            optional, a plain YAML file of the wrapper chart (e.g.
+            vendor-values/<chart>.yaml) merged between vendor/<chart>/values.yaml
+            and values: the fixed values the wrapper always sets, so that
+            values only carries what is computed. Not a template.
   upstream  optional, opts the chart into instance-level upstream values:
             .Values.upstream.<chart> is merged over the computed values
             (see okdp.vendor.upstream). Without it they are never read.
@@ -63,7 +68,18 @@ app.kubernetes.io/instance get it (pass "instanceLabel" false to opt out).
 {{- if hasKey $defaults "Error" -}}
   {{- fail (printf "%s: %s/values.yaml: %s" $ctx.Chart.Name $dir $defaults.Error) -}}
 {{- end -}}
-{{- $values := mergeOverwrite (deepCopy $defaults) (deepCopy (.values | default dict)) -}}
+{{- $fixed := dict -}}
+{{- with .valuesFile -}}
+  {{- $raw := $ctx.Files.Get . -}}
+  {{- if not $raw -}}
+    {{- fail (printf "%s: okdp.vendor.render %s: valuesFile %s not found or empty" $ctx.Chart.Name $name .) -}}
+  {{- end -}}
+  {{- $fixed = fromYaml $raw -}}
+  {{- if hasKey $fixed "Error" -}}
+    {{- fail (printf "%s: %s: %s" $ctx.Chart.Name . $fixed.Error) -}}
+  {{- end -}}
+{{- end -}}
+{{- $values := mergeOverwrite (deepCopy $defaults) $fixed (deepCopy (.values | default dict)) -}}
 {{- if hasKey . "upstream" -}}
   {{- include "okdp.vendor.upstream" (dict "ctx" $ctx "chart" $name "values" $values "options" .upstream) -}}
 {{- end -}}

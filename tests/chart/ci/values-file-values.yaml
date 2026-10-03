@@ -1,0 +1,10 @@
+# okdp.vendor.render with a valuesFile: vendored defaults, then the file, then
+# the computed values.
+global:
+  okdp:
+    ingress: {suffix: okdp.sandbox, className: nginx}
+    certificateIssuers: {selfSigned: {name: issuer}}
+test:
+  vendor:
+    enabled: true
+    valuesFile: vendor-values/mini.yaml

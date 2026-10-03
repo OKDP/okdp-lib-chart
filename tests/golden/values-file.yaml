@@ -1,0 +1,191 @@
+---
+# Source: okdp-lib-test/templates/descriptor.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini-okdp
+  namespace: demo
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+data:
+  service: "okdp-lib-test"
+  version: "1.2.3-0.1.0"
+  url: ""
+  usage: |
+    Mini is reachable at https://mini-demo.okdp.sandbox.
+  outputs.yaml: |
+    []
+
+---
+# Source: okdp-lib-test/templates/oidc.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini-oidc
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+data:
+  clientSecret: "creds-demo-mini-oauth2"
+
+---
+# Source: okdp-lib-test/templates/platform.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini-platform
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/component: test
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+  annotations:
+    cert-manager.io/cluster-issuer: "issuer"
+data:
+  fullname: "demo-mini"
+  ingressHost: "okdp-lib-test-demo.okdp.sandbox"
+  url: "https://ui-demo.okdp.sandbox"
+  className: "nginx"
+  missing: "null"
+  selectorLabels: |
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+  oidc.yaml: |
+    clientProvisioning: existing
+    dcr:
+      enabled: false
+    enabled: true
+    existing: true
+    scope: openid profile email groups
+  proxy-env.yaml: |
+    {}
+  proxy-envlist.yaml: |
+    []
+
+---
+# Source: okdp-lib-test/templates/vendor.yaml
+# Source: vendor/mini/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini
+  labels:
+    app.kubernetes.io/name: mini
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "9.9"
+data:
+  script.sh: |
+    echo "hello from a vendored file"
+    
+  global.suffix: "okdp.sandbox"
+
+
+
+---
+# Source: okdp-lib-test/templates/vendor.yaml
+# Source: okdp-lib-test/vendor/mini/values.yaml (okdp.vendor.render)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini-mini-values
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/component: vendor-values
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+    okdp.io/vendor-values: "mini"
+  annotations:
+    okdp.io/vendor-chart: "mini-0.4.2"
+data:
+  values.yaml: |
+    extraEnv: {}
+    global:
+      okdp:
+        certificateIssuers:
+          selfSigned:
+            name: issuer
+        ingress:
+          className: nginx
+          suffix: okdp.sandbox
+    hook:
+      enabled: false
+    image:
+      repository: fixed.example.org/mini
+      tag: "1.0"
+    ports:
+    - 8080
+    rbac: false
+    replicaCount: 1
+
+---
+# Source: okdp-lib-test/templates/vendor.yaml
+# Source: vendor/mini/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-mini
+  labels:
+    app.kubernetes.io/name: mini
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/version: "9.9"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: demo-mini
+  template:
+    metadata:
+      annotations:
+        checksum/config: 83640579dd0b27a910758c74d3ebc0a4efcced2076ae21f27d8714c8b7870c57
+      labels:
+        app.kubernetes.io/name: mini
+        app.kubernetes.io/instance: demo-mini
+        app.kubernetes.io/version: "9.9"
+    spec:
+      containers:
+        - name: mini
+          image: "fixed.example.org/mini:1.0"
+          ports:
+            - containerPort: 8080
+          env:
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: demo-mini-own
+                  key: token
+
+
+
+---
+# Source: okdp-lib-test/templates/vendor.yaml
+# Source: vendor/mini/templates/hook.yaml
+
+
+
+
+---
+# Source: okdp-lib-test/templates/vendor.yaml
+# Source: vendor/mini/templates/rbac.yaml

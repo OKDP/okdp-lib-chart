@@ -1,0 +1,3 @@
+# expect: valuesFile vendor-values/nope.yaml not found or empty
+test:
+  vendor: {valuesFile: vendor-values/nope.yaml}

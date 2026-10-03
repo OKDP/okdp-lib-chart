@@ -44,10 +44,11 @@ values.yaml           global/connections placeholders + the former KuboCD parame
 values.schema.json    draft-07, x-ui-* hints, x-okdp-connection-ref on connection refs
 vendor.yaml           upstream charts rendered with computed values (see okdp.vendor.render)
 vendor/<name>/        their pristine unpacked copy (scripts/vendor-charts.sh, not committed)
+vendor-values/<name>.yaml  the fixed values of vendor/<name>: plain YAML (okdp.vendor.render "valuesFile")
 templates/
   _instance.tpl       okdp.instance.url / usage / outputs overrides
-  _values.tpl         one define per upstream chart: its values, computed (the former module `values:`)
-  <name>.yaml         {{ include "okdp.vendor.render" (dict "ctx" $ "chart" "<name>" "values" ...) }}
+  _values.tpl         one define per upstream chart: its computed values (the former module `values:`)
+  <name>.yaml         {{ include "okdp.vendor.render" (dict "ctx" $ "chart" "<name>" "valuesFile" "vendor-values/<name>.yaml" "values" ...) }}
   oidc-dcr.yaml       {{ include "okdp.oidc.dcr" ... }}, under the dcr.enabled guard
   descriptor.yaml     {{ include "okdp.descriptor" . }}
 ci/*-values.yaml      include a global.okdp block: platform values are not in values.yaml
@@ -68,7 +69,7 @@ Helpers returning structured data return YAML: pipe them to `fromYaml`.
 | `type: connectionRef, contract: c` | `"type": "string", "x-okdp-connection-ref": {"contract": "c"}` + `okdp.connection` |
 | title `"Group \| Label \| widget \| order:1 columns:2 advanced:true condition:a=b"` | `title`, `x-ui-group`, `x-ui-widget`, `x-ui-order`, `x-ui-columns`, `x-ui-advanced`, `x-ui-condition: {field: a, value: b}` |
 | `required: true` on a property | parent `required: [...]` |
-| module `values:` template | a define returning YAML, passed to `okdp.vendor.render` |
+| module `values:` template | the fixed values in `vendor-values/<chart>.yaml` (`valuesFile`) and a define returning the computed ones, both passed to `okdp.vendor.render` |
 | module `enabled: "{{ expr }}"` | `{{ if expr }}` around the `okdp.vendor.render` include; for OIDC modes use `okdp.oidc` (`.dcr.enabled`, `.existing`) |
 | module `dependsOn` | nothing: resources must converge in any order |
 | `outputs` | `okdp.instance.outputs` + `okdp.contract.<c>.provide` |
@@ -282,6 +283,22 @@ the chart and of its library subcharts load and, as with Helm, what they print
 outside a `define` is discarded; `templates/tests/` and `NOTES.txt` are
 skipped; hook annotations are kept. A vendored chart bundling an application subchart
 is refused: vendor that subchart separately.
+
+The fixed values a wrapper gives an upstream chart (images, switches, probes,
+static configuration and scripts: what depends on no parameter, platform value
+or connection) go in a plain YAML file of the wrapper, passed as `valuesFile`;
+the values define then only computes the rest:
+
+```yaml
+{{ include "okdp.vendor.render" (dict "ctx" $ "chart" "trino" "valuesFile" "vendor-values/trino.yaml"
+     "values" (include "trino.values" . | fromYaml)) }}
+```
+
+Merge order: `vendor/<chart>/values.yaml`, `valuesFile`, `values`, the
+instance's `upstream.<chart>` (option `upstream`), `global`. Maps merge, lists
+and scalars replace: keep each list wholly in the file or in the template. The
+file is read with `.Files.Get`, never rendered: it holds no template code. A
+missing or invalid file fails the render.
 
 Objects and workload pod templates without `app.kubernetes.io/instance` get
 it (the console finds workloads by it); only those documents are

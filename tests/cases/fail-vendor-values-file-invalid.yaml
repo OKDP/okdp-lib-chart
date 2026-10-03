@@ -1,0 +1,3 @@
+# expect: vendor-values/bad.yaml: error converting YAML to JSON
+test:
+  vendor: {valuesFile: vendor-values/bad.yaml}

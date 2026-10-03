@@ -23,5 +23,7 @@ test:
     crds: ""
     # okdp.vendor.render upstream option: {protect: [...], append: [...], key: ...}
     upstream: {}
+    # okdp.vendor.render valuesFile option: a file of this chart (vendor-values/mini.yaml)
+    valuesFile: ""
     # okdp.vendor.render valuesConfigMap option (unset: the default, a values ConfigMap)
     # valuesConfigMap: false
