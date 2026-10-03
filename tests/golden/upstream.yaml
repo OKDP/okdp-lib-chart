@@ -83,6 +83,49 @@ data:
 
 ---
 # Source: okdp-lib-test/templates/vendor.yaml
+# Source: okdp-lib-test/vendor/mini/values.yaml (okdp.vendor.render)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini-mini-values
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/component: vendor-values
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+    okdp.io/vendor-values: "mini"
+  annotations:
+    okdp.io/vendor-chart: "mini-0.4.2"
+data:
+  values.yaml: |
+    extraEnv:
+      EXTRA: "yes"
+    global:
+      okdp:
+        certificateIssuers:
+          selfSigned:
+            name: issuer
+        ingress:
+          className: nginx
+          suffix: okdp.sandbox
+    hook:
+      enabled: false
+    image:
+      repository: mirror.example.org/mini
+      tag: "1.0"
+    ports:
+    - 8080
+    - 9090
+    rbac: false
+    replicaCount: 5
+
+---
+# Source: okdp-lib-test/templates/vendor.yaml
 # Source: vendor/mini/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment

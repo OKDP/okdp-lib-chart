@@ -21,3 +21,5 @@ test:
     crds: ""
     # okdp.vendor.render upstream option: {protect: [...], append: [...], key: ...}
     upstream: {}
+    # okdp.vendor.render valuesConfigMap option (unset: the default, a values ConfigMap)
+    # valuesConfigMap: false

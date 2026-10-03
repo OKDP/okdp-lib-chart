@@ -174,6 +174,189 @@ data:
 
 
 ---
+# Source: okdp-lib-test/templates/oidc-dcr.yaml
+# Source: okdp-lib-test/vendor/oidc-dcr/values.yaml (okdp.vendor.render)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini-oidc-dcr-values
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/component: vendor-values
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+    okdp.io/vendor-values: "oidc-dcr"
+  annotations:
+    okdp.io/vendor-chart: "oidc-dcr-0.3.3"
+data:
+  values.yaml: |
+    enabled: true
+    global:
+      okdp:
+        certificateIssuers:
+          selfSigned:
+            name: default-issuer
+        ingress:
+          className: nginx
+          suffix: okdp.sandbox
+        oidc:
+          authUrl: https://keycloak.okdp.sandbox/realms/master/protocol/openid-connect/auth
+          clientProvisioning: dcr
+          dcr:
+            authMethod: anonymous
+            registrationUrl: https://keycloak.okdp.sandbox/realms/master/clients-registrations/openid-connect
+          issuerUri: https://keycloak.okdp.sandbox/realms/master
+          jwksUri: https://keycloak.okdp.sandbox/realms/master/protocol/openid-connect/certs
+          tokenUrl: https://keycloak.okdp.sandbox/realms/master/protocol/openid-connect/token
+        proxy:
+          httpProxy: http://proxy:3128
+          httpsProxy: ""
+          noProxy: .svc,.cluster.local
+        storageClass:
+          data: standard
+          workspace: standard
+    image: docker.io/library/alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+    mapping:
+      default_keys:
+        CLIENT_ID: .client_id
+        CLIENT_SECRET: .client_secret
+        CLIENTID: .client_id
+        CLIENTSECRET: .client_secret
+        Client_ID: .client_id
+        Client_Secret: .client_secret
+        ClientID: .client_id
+        ClientId: .client_id
+        ClientSecret: .client_secret
+        OIDC_CLIENT_ID: .client_id
+        OIDC_CLIENT_SECRET: .client_secret
+        client-id: .client_id
+        client-secret: .client_secret
+        client_id: .client_id
+        client_secret: .client_secret
+        clientId: .client_id
+        clientSecret: .client_secret
+        clientid: .client_id
+        clientsecret: .client_secret
+        oidc-client-id: .client_id
+        oidc-client-secret: .client_secret
+        oidc_client_id: .client_id
+        oidc_client_secret: .client_secret
+        oidcClientId: .client_id
+        oidcClientSecret: .client_secret
+      key_mapping:
+        registration_access_token: .registration_access_token
+        registration_client_uri: .registration_client_uri
+      use_default: true
+    registration_url: https://keycloak.okdp.sandbox/realms/master/clients-registrations/openid-connect
+    request:
+      client_name: demo-mini
+    secret: demo-mini-dcr
+    security:
+      role: demo-mini-oidc-dcr
+      service_account: demo-mini-oidc-dcr
+    tls:
+      certificate: ""
+      insecure: false
+    ttl_seconds: 0
+
+
+---
+# Source: okdp-lib-test/templates/oidc-dcr.yaml
+# Source: okdp-lib-test/vendor/oidc-dcr/values.yaml (okdp.vendor.render)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-mini-console-oidc-dcr-values
+  labels:
+    helm.sh/chart: okdp-lib-test-1.2.3-0.1.0
+    app.kubernetes.io/name: okdp-lib-test
+    app.kubernetes.io/instance: demo-mini
+    app.kubernetes.io/component: vendor-values
+    app.kubernetes.io/version: "1.2.3"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: okdp
+    okdp.io/instance: demo-mini
+    okdp.io/service: okdp-lib-test
+    okdp.io/vendor-values: "oidc-dcr"
+  annotations:
+    okdp.io/vendor-chart: "oidc-dcr-0.3.3"
+data:
+  values.yaml: |
+    enabled: true
+    global:
+      okdp:
+        certificateIssuers:
+          selfSigned:
+            name: default-issuer
+        ingress:
+          className: nginx
+          suffix: okdp.sandbox
+        oidc:
+          authUrl: https://keycloak.okdp.sandbox/realms/master/protocol/openid-connect/auth
+          clientProvisioning: dcr
+          dcr:
+            authMethod: anonymous
+            registrationUrl: https://keycloak.okdp.sandbox/realms/master/clients-registrations/openid-connect
+          issuerUri: https://keycloak.okdp.sandbox/realms/master
+          jwksUri: https://keycloak.okdp.sandbox/realms/master/protocol/openid-connect/certs
+          tokenUrl: https://keycloak.okdp.sandbox/realms/master/protocol/openid-connect/token
+        proxy:
+          httpProxy: http://proxy:3128
+          httpsProxy: ""
+          noProxy: .svc,.cluster.local
+        storageClass:
+          data: standard
+          workspace: standard
+    image: docker.io/library/alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+    mapping:
+      default_keys:
+        CLIENT_ID: .client_id
+        CLIENT_SECRET: .client_secret
+        CLIENTID: .client_id
+        CLIENTSECRET: .client_secret
+        Client_ID: .client_id
+        Client_Secret: .client_secret
+        ClientID: .client_id
+        ClientId: .client_id
+        ClientSecret: .client_secret
+        OIDC_CLIENT_ID: .client_id
+        OIDC_CLIENT_SECRET: .client_secret
+        client-id: .client_id
+        client-secret: .client_secret
+        client_id: .client_id
+        client_secret: .client_secret
+        clientId: .client_id
+        clientSecret: .client_secret
+        clientid: .client_id
+        clientsecret: .client_secret
+        oidc-client-id: .client_id
+        oidc-client-secret: .client_secret
+        oidc_client_id: .client_id
+        oidc_client_secret: .client_secret
+        oidcClientId: .client_id
+        oidcClientSecret: .client_secret
+      key_mapping:
+        registration_access_token: .registration_access_token
+        registration_client_uri: .registration_client_uri
+      use_default: true
+    registration_url: https://keycloak.okdp.sandbox/realms/master/clients-registrations/openid-connect
+    request:
+      client_name: demo-mini
+    secret: demo-mini-console-dcr
+    security:
+      role: demo-mini-console-oidc-dcr
+      service_account: demo-mini-console-oidc-dcr
+    tls:
+      certificate: ""
+      insecure: false
+    ttl_seconds: 0
+
+---
 # Source: okdp-lib-test/templates/platform.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -985,7 +1168,6 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: demo-mini-oidc-dcr
-
 
 ---
 # Source: okdp-lib-test/templates/oidc-dcr.yaml

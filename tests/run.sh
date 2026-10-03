@@ -69,6 +69,15 @@ for values in "${chart}"/ci/*-values.yaml; do
   fi
 done
 
+# okdp.vendor.render values ConfigMaps: global.okdp.vendor.valuesConfigMap: false
+# turns every one of them off (ci/full-values.yaml renders two, for oidc-dcr).
+if helm_ template demo-mini "${chart}" --namespace demo -f "${chart}/ci/full-values.yaml" \
+     --set global.okdp.vendor.valuesConfigMap=false | grep -q 'okdp.io/vendor-values:'; then
+  failed "vendor values ConfigMap: global.okdp.vendor.valuesConfigMap=false still renders one"
+else
+  pass "vendor values ConfigMap: platform opt-out"
+fi
+
 for case in "${here}"/cases/fail-*.yaml; do
   name=$(basename "${case}" .yaml)
   expect=$(sed -n 's/^# expect: //p' "${case}")
