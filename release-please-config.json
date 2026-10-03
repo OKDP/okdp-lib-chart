@@ -37,6 +37,13 @@
       "component": "okdp-lib-chart",
       "release-type": "simple",
       "include-component-in-tag": false,
+      "extra-files": [
+        {
+          "type": "yaml",
+          "path": "Chart.yaml",
+          "jsonpath": "$.version"
+        }
+      ],
       "changelog-path": "CHANGELOG.md"
     }
   }
