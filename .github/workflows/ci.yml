@@ -66,11 +66,15 @@ jobs:
     permissions:
       contents: read
       packages: write
-    # TODO(no-kubocd): switch to @v1 (and drop tools_ref) once released.
+    # TODO(no-kubocd): switch to OKDP/gh-workflows@v1 (and drop tools_repository
+    # and tools_ref) once released. The no-kubocd branch of the shared
+    # workflows only exists on alliage-io/okdp-gh-workflows: a ref missing on
+    # OKDP/gh-workflows makes GitHub reject this whole file.
     # SECURITY (CI-01): @no-kubocd and tools_ref are mutable refs; pin both to
     # the same 40-hex commit SHA once the branch stops moving.
-    uses: OKDP/gh-workflows/.github/workflows/okdp-chart-ci.yml@no-kubocd
+    uses: alliage-io/okdp-gh-workflows/.github/workflows/okdp-chart-ci.yml@no-kubocd
     with:
+      tools_repository: alliage-io/okdp-gh-workflows
       tools_ref: no-kubocd
       publish_to_registry: "false"
       chart_roots: "."
