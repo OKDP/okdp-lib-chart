@@ -477,17 +477,19 @@ Arguments:
   name    default <release>-oidc-dcr: the Job, its ConfigMap, ServiceAccount,
           Role and RoleBinding, and the headless Service <name>-headless.
 
-oidc-dcr 0.3.3 names its Job, ConfigMap, RoleBinding and headless Service
+oidc-dcr 0.4.0 names its Job, ConfigMap, RoleBinding and headless Service
 "dcr"/"dcr-headless" whatever the release: two DCR clients of one namespace
 (two releases, or two clients of one release) would share them, the second
 replacing the first. They are renamed here, with the references to them (the
 Job's ConfigMap volume, the Service selector job-name); the ServiceAccount and
 Role are named through the values (security.service_account, security.role),
-which this helper sets. The Job image defaults to a pinned Alpine (the chart's
-default is alpine:latest; the script still installs its tools with apk at
-runtime); values.image overrides it. The renamed documents are re-serialised (same content,
-keys sorted, comments dropped). Fails when an expected object is missing: the
-upstream chart changed.
+which this helper sets. The Job image is the chart's own,
+quay.io/adaltas/oidc-dcr-job tagged with the chart version: it embeds the
+tools of the script, which downloads nothing when it starts (air-gapped
+installs mirror it like any other image); values.image (registry, repository,
+tag, pull_policy, pull_secrets) overrides it. The renamed documents are
+re-serialised (same content, keys sorted, comments dropped). Fails when an
+expected object is missing: the upstream chart changed.
 */}}
 {{- define "okdp.vendor.oidcDcr" -}}
 {{- $ctx := .ctx -}}
@@ -497,9 +499,6 @@ upstream chart changed.
 {{- $_ := set $values "security" (merge (dict "service_account" $name "role" $name) ($values.security | default dict)) -}}
 {{- $_ := set $values.security "service_account" $name -}}
 {{- $_ := set $values.security "role" $name -}}
-{{- if not $values.image -}}
-  {{- $_ := set $values "image" "docker.io/library/alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6" -}}
-{{- end -}}
 {{- $rendered := include "okdp.vendor.render" (dict "ctx" $ctx "chart" "oidc-dcr" "values" $values "valuesName" (printf "%s-values" $name)) -}}
 {{- $renames := dict "ConfigMap/dcr" $name "Job/dcr" $name "RoleBinding/dcr" $name "Service/dcr-headless" $headless -}}
 {{- $seen := dict -}}

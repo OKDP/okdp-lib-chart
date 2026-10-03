@@ -381,16 +381,18 @@ re-serialised. Fails when nothing was re-pointed (the upstream chart changed).
 
 Renders `vendor/oidc-dcr` (the Job registering the OAuth client of
 `clientProvisioning: dcr` and writing it to a Secret) like `okdp.vendor.render`,
-with names of its own: oidc-dcr 0.3.3 names its Job, ConfigMap, RoleBinding and
+with names of its own: oidc-dcr 0.4.0 names its Job, ConfigMap, RoleBinding and
 headless Service `dcr`/`dcr-headless` whatever the release, so two DCR clients of
 one namespace would replace each other's. They are all named `name` (default
 `<release>-oidc-dcr`; the Service `<name>-headless`), the ServiceAccount and Role
 too, with the references to them. A release with two clients passes a second
 `name`, e.g. `<release>-console-oidc-dcr`. Fails when an expected object is
-missing (the upstream chart changed). The Job image is pinned
-(`alpine:3.24.2` by digest) instead of the chart's `alpine:latest`, unless the
-values set `image`; the upstream script still installs curl, jq and kubectl
-with `apk` when it starts.
+missing (the upstream chart changed). The Job runs the chart's own image,
+`quay.io/adaltas/oidc-dcr-job` tagged with the chart version: curl, jq and
+kubectl are in the image, the script downloads nothing when it starts, so the
+Job also runs air-gapped (mirror the image like any other). The values'
+`image` (`registry`, `repository`, `tag`, `pull_policy`, `pull_secrets`)
+overrides it.
 
 The upstream chart must itself respect the forbidden patterns (no `lookup`,
 no random function, hooks limited to pre/post-install/upgrade): review it when
